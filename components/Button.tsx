@@ -87,7 +87,7 @@ export default function Button({
           onPressIn={() => setIsPressed(true)}
           onPressOut={() => setIsPressed(false)}
           disabled={disabled}
-          activeOpacity={0.7}
+          activeOpacity={1}
         >
           <Text style={[styles.text, { color: getTextColor() }, textStyle]}>{title}</Text>
         </TouchableOpacity>
