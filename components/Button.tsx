@@ -98,10 +98,7 @@ export default function Button({
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    paddingLeft: 4,
-    paddingRight: 4,
+    marginHorizontal: -4,
   },
   borderContainer: {
     borderRadius: 100,
