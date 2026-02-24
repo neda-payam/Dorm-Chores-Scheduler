@@ -19,7 +19,8 @@ Preview Images (To be completed)
 ## Documentation
 
 Link (Automatically published): [ReadTheDocs Page](https://dorm-chores-scheduler.readthedocs.io/en/latest/)
-Documentation Files: dcs-docs/docs
+
+Documentation Files: dcs-docs/docs ([Folder Link](https://github.com/SETaP-2025-2026-Group-7-Team-C/Dorm-Chores-Scheduler/tree/main/dcs-docs/docs))
 
 ## Installation & Project Setup
 
