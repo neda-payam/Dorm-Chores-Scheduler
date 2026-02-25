@@ -3,6 +3,7 @@ import React from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
+import InlineButton from '../../components/InlineButton';
 
 export default function ButtonTestPage() {
   const handleStandardPress = () => {
@@ -19,6 +20,10 @@ export default function ButtonTestPage() {
 
   const handleDangerPress = () => {
     Alert.alert('Danger Button Pressed!', 'You pressed the danger button');
+  };
+
+  const handleInlinePress = () => {
+    Alert.alert('Inline Button Pressed!', 'You pressed an inline button');
   };
 
   return (
@@ -48,6 +53,31 @@ export default function ButtonTestPage() {
 
           <Button title="Disabled Button" onPress={() => {}} disabled={true} />
         </View>
+
+        <Text style={styles.sectionTitle}>Inline Button Component</Text>
+        <Text style={styles.subtitle}>
+          Testing inline buttons that inherit text size from their context
+        </Text>
+
+        <View style={styles.inlineButtonSection}>
+          <Text style={styles.bodyText}>
+            Here is some body text with an{' '}
+            <InlineButton title="inline link" onPress={handleInlinePress} /> that inherits the text
+            size.
+          </Text>
+
+          <Text style={styles.largeText}>
+            Large text with <InlineButton title="inline button" onPress={handleInlinePress} /> that
+            inherits the text size.
+          </Text>
+
+          <Text style={styles.smallText}>
+            Small text with <InlineButton title="inline link" onPress={handleInlinePress} /> that
+            inherits the text size.
+          </Text>
+        </View>
+
+        <View style={{ height: 50 }} />
       </View>
     </>
   );
@@ -73,5 +103,31 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    color: '#000000',
+    marginTop: 32,
+    marginBottom: 8,
+  },
+  inlineButtonSection: {
+    gap: 16,
+  },
+  bodyText: {
+    fontSize: 16,
+    color: '#000000',
+    lineHeight: 24,
+  },
+  largeText: {
+    fontSize: 20,
+    color: '#000000',
+    lineHeight: 28,
+  },
+  smallText: {
+    fontSize: 12,
+    color: '#000000',
+    lineHeight: 18,
   },
 });
