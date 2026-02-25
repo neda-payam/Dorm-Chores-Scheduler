@@ -3,58 +3,72 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import CurvedBanner from '../../components/CurvedBanner';
 import HeaderBackButton from '../../components/HeaderBackButton';
+import Spacer from '../../components/Spacer';
 import { COLOURS } from '../../constants/colours';
 
 export default function CurvedBannerTest() {
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: '',
-          headerStyle: {
-            backgroundColor: COLOURS.white,
-          },
-          headerTitleStyle: { fontWeight: 'bold' },
-          headerLeft: () => <HeaderBackButton />,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.container}>
-        <Text style={styles.title}>Curved Banner Component</Text>
-        <Text style={styles.subtitle}>
-          Each variant uses exact SVG parameters ported from the Figma Prototype.
-        </Text>
+        <View style={styles.header}>
+          <HeaderBackButton />
+        </View>
+
+        <Spacer size="medium" />
+
+        <View style={styles.content}>
+          <Text style={styles.title}>Curved Banner Component</Text>
+          <Spacer size="small" />
+          <Text style={styles.subtitle}>
+            Test curved banner variants and responsive design. Each variant uses exact SVG
+            parameters ported from the Figma Prototype.
+          </Text>
+        </View>
+
+        <Spacer size="large" />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Large Variant</Text>
+          <Spacer size="small" />
           <Text style={styles.description}>
             229×402px | cx=139.09, cy=67.89, rx=335.64, ry=144.00, rotation=-13.60°
           </Text>
+          <Spacer size="small" />
           <View style={styles.bannerContainer}>
             <CurvedBanner variant="large" />
           </View>
         </View>
 
+        <Spacer size="large" />
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Medium Variant</Text>
+          <Spacer size="small" />
           <Text style={styles.description}>
             194×402px | cx=134.60, cy=49.34, rx=335.64, ry=124.92, rotation=-13.60°
           </Text>
+          <Spacer size="small" />
           <View style={styles.bannerContainer}>
             <CurvedBanner variant="medium" />
           </View>
         </View>
 
+        <Spacer size="large" />
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Small Variant</Text>
+          <Spacer size="small" />
           <Text style={styles.description}>
             114×402px | cx=136.47, cy=16.95, rx=335.64, ry=82.12, rotation=-9.24°
           </Text>
+          <Spacer size="small" />
           <View style={styles.bannerContainer}>
             <CurvedBanner variant="small" />
           </View>
         </View>
 
-        <View style={{ height: 50 }} />
+        <Spacer size="large" />
       </ScrollView>
     </>
   );
@@ -63,37 +77,40 @@ export default function CurvedBannerTest() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: COLOURS.white,
   },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  content: {
+    marginHorizontal: 20,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'left',
     color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'left',
-    marginBottom: 24,
     color: COLOURS.gray[700],
+    lineHeight: 22,
   },
   section: {
-    marginBottom: 32,
+    marginHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLOURS.black,
-    marginBottom: 8,
   },
   description: {
     fontSize: 14,
     color: COLOURS.gray[700],
-    marginBottom: 12,
+    lineHeight: 18,
   },
   bannerContainer: {
-    marginVertical: 8,
     backgroundColor: COLOURS.gray[50],
     borderRadius: 8,
     position: 'relative',

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import Selector, { SelectorOption } from '../../components/Selector';
+import Spacer from '../../components/Spacer';
 import { COLOURS } from '../../constants/colours';
 
 export default function SelectorTestPage() {
@@ -25,36 +26,43 @@ export default function SelectorTestPage() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: '',
-          headerStyle: {
-            backgroundColor: COLOURS.white,
-          },
-          headerTitleStyle: { fontWeight: 'bold' },
-          headerLeft: () => <HeaderBackButton />,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.container}>
-        <Text style={styles.title}>Selector Component Test</Text>
-        <Text style={styles.subtitle}>
-          Test the selector component with different configurations
-        </Text>
+        <View style={styles.header}>
+          <HeaderBackButton />
+        </View>
+
+        <Spacer size="medium" />
+
+        <View style={styles.content}>
+          <Text style={styles.title}>Selector Component Test</Text>
+          <Spacer size="small" />
+          <Text style={styles.subtitle}>
+            Test the selector component with different configurations
+          </Text>
+        </View>
+
+        <Spacer size="large" />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Type Selection</Text>
+          <Spacer size="small" />
           <Text style={styles.description}>
             Select your account type. Student is selected by default.
           </Text>
+          <Spacer size="medium" />
           <Selector
             options={accountTypeOptions}
             selectedId={selectedAccountType}
             onSelect={setSelectedAccountType}
           />
+          <Spacer size="medium" />
           <Text style={styles.selectedText}>
             Selected: {accountTypeOptions.find((opt) => opt.id === selectedAccountType)?.title}
           </Text>
         </View>
+
+        <Spacer size="large" />
       </ScrollView>
     </>
   );
@@ -65,40 +73,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLOURS.white,
   },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  content: {
+    marginHorizontal: 20,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'left',
-    marginLeft: 20,
-    marginTop: 20,
     color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'left',
-    marginLeft: 20,
-    marginBottom: 24,
-    color: COLOURS.black,
+    color: COLOURS.gray[700],
+    lineHeight: 22,
   },
   section: {
-    marginBottom: 32,
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLOURS.black,
   },
   description: {
     fontSize: 14,
     color: COLOURS.gray[700],
-    marginBottom: 16,
     lineHeight: 18,
   },
   selectedText: {
     fontSize: 14,
     color: COLOURS.gray[700],
-    marginTop: 12,
     fontStyle: 'italic',
   },
 });

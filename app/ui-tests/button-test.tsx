@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import InlineButton from '../../components/InlineButton';
+import Spacer from '../../components/Spacer';
 import { COLOURS } from '../../constants/colours';
 
 export default function ButtonTestPage() {
@@ -29,48 +30,68 @@ export default function ButtonTestPage() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: '',
-          headerStyle: {
-            backgroundColor: COLOURS.white,
-          },
-          headerTitleStyle: { fontWeight: 'bold' },
-          headerLeft: () => <HeaderBackButton />,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        <Text style={styles.title}>Button Component</Text>
-        <Text style={styles.subtitle}>Testing different button variants and states</Text>
+        <View style={styles.header}>
+          <HeaderBackButton />
+        </View>
 
-        <View style={styles.buttonContainer}>
+        <Spacer size="medium" />
+
+        <View style={styles.content}>
+          <Text style={styles.title}>Button Component</Text>
+          <Spacer size="small" />
+          <Text style={styles.subtitle}>Testing different button variants and states</Text>
+        </View>
+
+        <Spacer size="large" />
+        <View style={styles.content}>
           <Button title="Standard Button" onPress={handleStandardPress} variant="standard" />
+
+          <Spacer size="medium" />
 
           <Button title="Secondary Button" onPress={handleSecondaryPress} variant="secondary" />
 
+          <Spacer size="medium" />
+
           <Button title="Tertiary Button" onPress={handleTertiaryPress} variant="tertiary" />
 
+          <Spacer size="medium" />
+
           <Button title="Danger Button" onPress={handleDangerPress} variant="danger" />
+
+          <Spacer size="medium" />
 
           <Button title="Disabled Button" onPress={() => {}} disabled={true} />
         </View>
 
-        <Text style={styles.sectionTitle}>Inline Button Component</Text>
-        <Text style={styles.subtitle}>
-          Testing inline buttons that inherit text size from their context
-        </Text>
+        <Spacer size="large" />
 
-        <View style={styles.inlineButtonSection}>
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Inline Button Component</Text>
+          <Spacer size="small" />
+          <Text style={styles.subtitle}>
+            Testing inline buttons that inherit text size from their context
+          </Text>
+        </View>
+
+        <Spacer size="medium" />
+
+        <View style={styles.content}>
           <Text style={styles.bodyText}>
             Here is some body text with an{' '}
             <InlineButton title="inline link" onPress={handleInlinePress} /> that inherits the text
             size.
           </Text>
 
+          <Spacer size="medium" />
+
           <Text style={styles.largeText}>
             Large text with <InlineButton title="inline button" onPress={handleInlinePress} /> that
             inherits the text size.
           </Text>
+
+          <Spacer size="medium" />
 
           <Text style={styles.smallText}>
             Small text with <InlineButton title="inline link" onPress={handleInlinePress} /> that
@@ -78,7 +99,7 @@ export default function ButtonTestPage() {
           </Text>
         </View>
 
-        <View style={{ height: 50 }} />
+        <Spacer size="large" />
       </View>
     </>
   );
@@ -87,34 +108,30 @@ export default function ButtonTestPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: COLOURS.white,
   },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  content: {
+    marginHorizontal: 20,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'left',
     color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'left',
-    marginBottom: 24,
-    color: COLOURS.black,
-  },
-  buttonContainer: {
-    gap: 8,
+    color: COLOURS.gray[700],
+    lineHeight: 22,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    textAlign: 'left',
     color: COLOURS.black,
-    marginTop: 32,
-    marginBottom: 8,
-  },
-  inlineButtonSection: {
-    gap: 16,
   },
   bodyText: {
     fontSize: 16,
