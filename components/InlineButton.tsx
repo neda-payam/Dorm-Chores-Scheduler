@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, TextStyle } from 'react-native';
+import { COLOURS } from '../constants/colors';
 
 interface InlineButtonProps {
   title: string;
@@ -22,7 +23,7 @@ export default function InlineButton({
           fontFamily: 'Inter',
           fontWeight: '700',
           textDecorationLine: 'underline',
-          color: disabled ? '#888888' : '#153000',
+          color: disabled ? COLOURS.disabled : COLOURS.primary,
         },
         style,
       ]}

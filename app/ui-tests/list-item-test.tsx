@@ -3,6 +3,7 @@ import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import ListItem from '../../components/ListItem';
+import { COLOURS } from '../../constants/colors';
 
 export default function ListItemTestPage() {
   const handlePress = (itemName: string) => {
@@ -15,7 +16,7 @@ export default function ListItemTestPage() {
         options={{
           title: '',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLOURS.white,
           },
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => <HeaderBackButton />,
@@ -69,7 +70,7 @@ export default function ListItemTestPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLOURS.white,
   },
   title: {
     fontSize: 24,
@@ -77,14 +78,14 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     marginLeft: 20,
     marginTop: 20,
-    color: '#000000',
+    color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'left',
     marginLeft: 20,
     marginBottom: 24,
-    color: '#000000',
+    color: COLOURS.black,
   },
   section: {
     marginBottom: 24,
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
-    color: '#333333',
+    color: COLOURS.gray[800],
   },
   listContainer: {
     gap: 8,

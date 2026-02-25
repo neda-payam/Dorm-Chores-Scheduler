@@ -3,6 +3,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import InlineNotification from '../../components/InlineNotification';
+import { COLOURS } from '../../constants/colors';
 
 export default function InlineNotificationTest() {
   return (
@@ -11,7 +12,7 @@ export default function InlineNotificationTest() {
         options={{
           title: '',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLOURS.white,
           },
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => <HeaderBackButton />,
@@ -120,19 +121,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLOURS.white,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'left',
-    color: '#000000',
+    color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'left',
     marginBottom: 24,
-    color: '#666666',
+    color: COLOURS.gray[700],
   },
   section: {
     marginBottom: 24,
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000000',
+    color: COLOURS.black,
     marginBottom: 12,
   },
   notificationSpacing: {

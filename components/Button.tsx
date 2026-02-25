@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { COLOURS } from '../constants/colors';
 
 type ButtonVariant = 'standard' | 'secondary' | 'tertiary' | 'danger';
 
@@ -39,18 +40,18 @@ export default function Button({
   };
 
   const getTextColor = () => {
-    if (disabled) return '#888888';
+    if (disabled) return COLOURS.disabled;
 
     switch (variant) {
       case 'secondary':
-        return '#9BE36D';
+        return COLOURS.primaryMuted;
       case 'tertiary':
-        return '#153000';
+        return COLOURS.primary;
       case 'danger':
-        return '#FFFFFF';
+        return COLOURS.white;
       case 'standard':
       default:
-        return '#000000';
+        return COLOURS.black;
     }
   };
 
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   },
   borderContainer: {
     borderRadius: 100,
-    borderColor: 'transparent',
+    borderColor: COLOURS.transparent,
     borderWidth: 2,
     padding: 2,
   },
@@ -120,18 +121,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   standard: {
-    backgroundColor: '#87EA5C',
+    backgroundColor: COLOURS.primaryLight,
   },
   secondary: {
-    backgroundColor: '#153000',
+    backgroundColor: COLOURS.primary,
   },
   tertiary: {
-    backgroundColor: '#DDF7D2',
+    backgroundColor: COLOURS.primarySoft,
   },
   danger: {
-    backgroundColor: '#B70000',
+    backgroundColor: COLOURS.error.text,
   },
   disabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: COLOURS.gray[300],
   },
 });

@@ -8,6 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { COLOURS } from '../constants/colors';
 
 type InputState = 'default' | 'focus' | 'error';
 
@@ -40,18 +41,18 @@ export default function Input({ hasError = false, style, ...props }: InputProps)
       case 'error':
         return {
           borderWidth: 2,
-          borderColor: '#B70000',
+          borderColor: COLOURS.input.error,
         };
       case 'focus':
         return {
           borderWidth: 2,
-          borderColor: '#000000',
+          borderColor: COLOURS.input.focus,
         };
       case 'default':
       default:
         return {
           borderWidth: 1,
-          borderColor: '#868685',
+          borderColor: COLOURS.input.default,
         };
     }
   };
@@ -89,11 +90,15 @@ export default function Input({ hasError = false, style, ...props }: InputProps)
           setIsFocused(false);
           props.onBlur?.(e);
         }}
-        placeholderTextColor="#868685"
+        placeholderTextColor={COLOURS.input.placeholder}
       />
       {showPasswordToggle && (
         <TouchableOpacity style={styles.toggleButton} onPress={togglePasswordVisibility}>
-          <FontAwesome name={isPasswordVisible ? 'eye-slash' : 'eye'} size={16} color="#000000" />
+          <FontAwesome
+            name={isPasswordVisible ? 'eye-slash' : 'eye'}
+            size={16}
+            color={COLOURS.black}
+          />
         </TouchableOpacity>
       )}
     </View>
@@ -104,7 +109,7 @@ const styles = StyleSheet.create({
   container: {
     height: 62,
     width: '100%',
-    backgroundColor: 'transparent',
+    backgroundColor: COLOURS.transparent,
     borderRadius: 16,
     justifyContent: 'center',
     flexDirection: 'row',
@@ -115,7 +120,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontFamily: 'Inter',
-    color: '#000000',
+    color: COLOURS.input.text,
     paddingLeft: 16,
     paddingRight: 16,
     paddingVertical: 0,

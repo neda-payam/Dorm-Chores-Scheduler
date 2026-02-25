@@ -3,6 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import ListItem from '../../components/ListItem';
+import { COLOURS } from '../../constants/colors';
 
 export default function UITestHub() {
   return (
@@ -11,7 +12,7 @@ export default function UITestHub() {
         options={{
           title: '',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLOURS.white,
           },
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => <HeaderBackButton iconName="close" />,
@@ -49,6 +50,13 @@ export default function UITestHub() {
             iconName="pencil"
             onPress={() => router.push('/ui-tests/input-test')}
           />
+
+          <ListItem
+            title="Curved Banner Component"
+            subtitle="Test curved banner variants and responsive design"
+            iconName="square"
+            onPress={() => router.push('/ui-tests/curved-banner-test')}
+          />
         </View>
       </View>
     </>
@@ -59,19 +67,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLOURS.white,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'left',
-    color: '#000000',
+    color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'left',
     marginBottom: 24,
-    color: '#000000',
+    color: COLOURS.black,
   },
   linksContainer: {
     gap: 8,

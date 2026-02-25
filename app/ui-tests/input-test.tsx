@@ -5,6 +5,7 @@ import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import Input from '../../components/Input';
 import InputCode from '../../components/InputCode';
+import { COLOURS } from '../../constants/colors';
 
 export default function InputTest() {
   const [defaultValue, setDefaultValue] = useState('');
@@ -33,7 +34,7 @@ export default function InputTest() {
         options={{
           title: '',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLOURS.white,
           },
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => <HeaderBackButton />,
@@ -159,19 +160,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLOURS.white,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'left',
-    color: '#000000',
+    color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'left',
     marginBottom: 24,
-    color: '#666666',
+    color: COLOURS.gray[700],
   },
   section: {
     marginBottom: 24,
@@ -179,12 +180,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000000',
+    color: COLOURS.black,
     marginBottom: 8,
   },
   description: {
     fontSize: 14,
-    color: '#666666',
+    color: COLOURS.gray[700],
     marginBottom: 12,
   },
   inputSpacing: {
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: COLOURS.black,
     marginBottom: 8,
     marginTop: 8,
   },

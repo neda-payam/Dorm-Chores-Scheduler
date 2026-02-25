@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View, ViewStyle } from 'react-native';
+import { COLOURS } from '../constants/colors';
 
 type InputState = 'default' | 'focus' | 'error';
 
@@ -33,18 +34,18 @@ export default function InputCode({
       case 'error':
         return {
           borderWidth: 2,
-          borderColor: '#B70000',
+          borderColor: COLOURS.input.error,
         };
       case 'focus':
         return {
           borderWidth: 2,
-          borderColor: '#000000',
+          borderColor: COLOURS.input.focus,
         };
       case 'default':
       default:
         return {
           borderWidth: 1,
-          borderColor: '#868685',
+          borderColor: COLOURS.input.default,
         };
     }
   };
@@ -75,7 +76,7 @@ export default function InputCode({
         style={styles.input}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        placeholderTextColor="#868685"
+        placeholderTextColor={COLOURS.input.placeholder}
         placeholder="123-456"
         keyboardType="numeric"
         maxLength={7}
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
   container: {
     height: 62,
     width: 110,
-    backgroundColor: 'transparent',
+    backgroundColor: COLOURS.transparent,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontFamily: 'Inter',
     fontWeight: '600',
-    color: '#000000',
+    color: COLOURS.input.text,
     paddingHorizontal: 8,
     paddingVertical: 0,
     textAlignVertical: 'center',

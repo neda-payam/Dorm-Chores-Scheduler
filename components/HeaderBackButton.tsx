@@ -2,6 +2,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { COLOURS } from '../constants/colors';
 
 interface HeaderBackButtonProps {
   onPress?: () => void;
@@ -14,8 +15,8 @@ interface HeaderBackButtonProps {
 export default function HeaderBackButton({
   onPress = () => router.back(),
   style,
-  iconColor = '#000000',
-  backgroundColor = '#F1F1ED',
+  iconColor = COLOURS.black,
+  backgroundColor = COLOURS.gray[100],
   iconName = 'chevron-left',
 }: HeaderBackButtonProps) {
   return (

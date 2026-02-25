@@ -1,6 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { COLOURS } from '../constants/colors';
 
 type NotificationType = 'error' | 'warning' | 'info' | 'success' | 'tip';
 
@@ -40,39 +41,39 @@ export default function InlineNotification({
     switch (type) {
       case 'error':
         return {
-          backgroundColor: '#FFE9EA',
-          textColor: '#B70000',
-          iconColor: '#B70000',
+          backgroundColor: COLOURS.error.background,
+          textColor: COLOURS.error.text,
+          iconColor: COLOURS.error.text,
         };
       case 'warning':
         return {
-          backgroundColor: '#FFF7D3',
-          textColor: 'rgba(0, 0, 0, 0.65)',
-          iconColor: '#FFCF00',
+          backgroundColor: COLOURS.warning.background,
+          textColor: COLOURS.warning.text,
+          iconColor: COLOURS.warning.icon,
         };
       case 'info':
         return {
-          backgroundColor: '#F1F1ED',
-          textColor: 'rgba(0, 0, 0, 0.65)',
-          iconColor: 'rgba(0, 0, 0, 0.65)',
+          backgroundColor: COLOURS.info.background,
+          textColor: COLOURS.info.text,
+          iconColor: COLOURS.info.icon,
         };
       case 'success':
         return {
-          backgroundColor: '#DDF7D2',
-          textColor: '#1F5800',
-          iconColor: '#1F5800',
+          backgroundColor: COLOURS.success.background,
+          textColor: COLOURS.success.text,
+          iconColor: COLOURS.success.icon,
         };
       case 'tip':
         return {
-          backgroundColor: '#DAF8F7',
-          textColor: '#004F4E',
-          iconColor: '#004F4E',
+          backgroundColor: COLOURS.tip.background,
+          textColor: COLOURS.tip.text,
+          iconColor: COLOURS.tip.icon,
         };
       default:
         return {
-          backgroundColor: '#F1F1ED',
-          textColor: 'rgba(0, 0, 0, 0.65)',
-          iconColor: 'rgba(0, 0, 0, 0.65)',
+          backgroundColor: COLOURS.info.background,
+          textColor: COLOURS.info.text,
+          iconColor: COLOURS.info.icon,
         };
     }
   };

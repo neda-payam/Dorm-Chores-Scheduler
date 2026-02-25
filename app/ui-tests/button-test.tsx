@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import InlineButton from '../../components/InlineButton';
+import { COLOURS } from '../../constants/colors';
 
 export default function ButtonTestPage() {
   const handleStandardPress = () => {
@@ -32,7 +33,7 @@ export default function ButtonTestPage() {
         options={{
           title: '',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLOURS.white,
           },
           headerTitleStyle: { fontWeight: 'bold' },
           headerLeft: () => <HeaderBackButton />,
@@ -87,19 +88,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLOURS.white,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'left',
-    color: '#000000',
+    color: COLOURS.black,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'left',
     marginBottom: 24,
-    color: '#000000',
+    color: COLOURS.black,
   },
   buttonContainer: {
     gap: 8,
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'left',
-    color: '#000000',
+    color: COLOURS.black,
     marginTop: 32,
     marginBottom: 8,
   },
@@ -117,17 +118,17 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     fontSize: 16,
-    color: '#000000',
+    color: COLOURS.black,
     lineHeight: 24,
   },
   largeText: {
     fontSize: 20,
-    color: '#000000',
+    color: COLOURS.black,
     lineHeight: 28,
   },
   smallText: {
     fontSize: 12,
-    color: '#000000',
+    color: COLOURS.black,
     lineHeight: 18,
   },
 });
