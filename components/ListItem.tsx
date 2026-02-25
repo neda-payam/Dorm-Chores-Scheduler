@@ -1,4 +1,4 @@
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableHighlight, View } from 'react-native';
 import { COLOURS } from '../constants/colours';
@@ -6,7 +6,7 @@ import { COLOURS } from '../constants/colours';
 interface ListItemProps {
   title: string;
   subtitle?: string;
-  iconName: string;
+  iconName: keyof typeof FontAwesome5.glyphMap;
   onPress: () => void;
   iconColor?: string;
   style?: object;
@@ -29,7 +29,7 @@ export default function ListItem({
     >
       <View style={styles.innerContainer}>
         <View style={styles.iconCircle}>
-          <FontAwesome name={iconName as any} size={16} color={iconColor} />
+          <FontAwesome5 name={iconName} size={16} color={iconColor} />
         </View>
 
         <View style={styles.contentContainer}>
@@ -37,7 +37,7 @@ export default function ListItem({
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
 
-        <FontAwesome name="chevron-right" size={16} color={COLOURS.black} />
+        <FontAwesome5 name="chevron-right" size={16} color={COLOURS.black} />
       </View>
     </TouchableHighlight>
   );

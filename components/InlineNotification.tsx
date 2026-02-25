@@ -1,4 +1,4 @@
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { COLOURS } from '../constants/colours';
@@ -8,7 +8,7 @@ type NotificationType = 'error' | 'warning' | 'info' | 'success' | 'tip';
 interface InlineNotificationProps {
   type: NotificationType;
   text: string;
-  iconName?: string;
+  iconName?: keyof typeof FontAwesome5.glyphMap;
   style?: ViewStyle;
 }
 
@@ -18,7 +18,7 @@ export default function InlineNotification({
   iconName,
   style,
 }: InlineNotificationProps) {
-  const getIconName = (): string => {
+  const getIconName = (): keyof typeof FontAwesome5.glyphMap => {
     if (iconName) return iconName;
 
     switch (type) {
@@ -31,7 +31,7 @@ export default function InlineNotification({
       case 'success':
         return 'check-circle';
       case 'tip':
-        return 'lightbulb-o';
+        return 'lightbulb';
       default:
         return 'info-circle';
     }
@@ -83,7 +83,12 @@ export default function InlineNotification({
   return (
     <View style={[styles.container, { backgroundColor: typeStyles.backgroundColor }, style]}>
       <View style={styles.iconContainer}>
-        <FontAwesome name={getIconName() as any} size={20} color={typeStyles.iconColor} />
+        <FontAwesome5
+          name={getIconName()}
+          size={18}
+          color={typeStyles.iconColor}
+          style={styles.icon}
+        />
       </View>
       <Text style={[styles.text, { color: typeStyles.textColor }]}>{text}</Text>
     </View>
@@ -102,11 +107,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   iconContainer: {
-    width: 20,
+    width: 24,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    overflow: 'hidden',
+  },
+  icon: {
+    maxWidth: 24,
+    maxHeight: 20,
   },
   text: {
     fontSize: 12,

@@ -1,4 +1,4 @@
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -9,7 +9,7 @@ interface HeaderBackButtonProps {
   style?: object;
   iconColor?: string;
   backgroundColor?: string;
-  iconName?: string;
+  iconName?: keyof typeof FontAwesome5.glyphMap;
 }
 
 export default function HeaderBackButton({
@@ -25,7 +25,7 @@ export default function HeaderBackButton({
       onPress={onPress}
     >
       <View style={styles.iconContainer}>
-        <FontAwesome name={iconName as any} size={16} color={iconColor} />
+        <FontAwesome5 name={iconName} size={16} color={iconColor} />
       </View>
     </TouchableOpacity>
   );

@@ -15,7 +15,7 @@ export default function UITestHub() {
             backgroundColor: COLOURS.white,
           },
           headerTitleStyle: { fontWeight: 'bold' },
-          headerLeft: () => <HeaderBackButton iconName="close" />,
+          headerLeft: () => <HeaderBackButton iconName="times" />,
         }}
       />
       <View style={styles.container}>
@@ -47,14 +47,21 @@ export default function UITestHub() {
           <ListItem
             title="Input Component"
             subtitle="Test input states, styling and interactions"
-            iconName="pencil"
+            iconName="pencil-alt"
             onPress={() => router.push('/ui-tests/input-test')}
+          />
+
+          <ListItem
+            title="Selector Component"
+            subtitle="Test selector options and selection states"
+            iconName="check-square"
+            onPress={() => router.push('/ui-tests/selector-test')}
           />
 
           <ListItem
             title="Curved Banner Component"
             subtitle="Test curved banner variants and responsive design"
-            iconName="square"
+            iconName="image"
             onPress={() => router.push('/ui-tests/curved-banner-test')}
           />
         </View>

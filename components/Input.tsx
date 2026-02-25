@@ -1,4 +1,4 @@
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -94,7 +94,7 @@ export default function Input({ hasError = false, style, ...props }: InputProps)
       />
       {showPasswordToggle && (
         <TouchableOpacity style={styles.toggleButton} onPress={togglePasswordVisibility}>
-          <FontAwesome
+          <FontAwesome5
             name={isPasswordVisible ? 'eye-slash' : 'eye'}
             size={16}
             color={COLOURS.black}

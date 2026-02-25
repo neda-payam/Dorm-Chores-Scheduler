@@ -47,7 +47,7 @@ export default function InlineNotificationTest() {
           <InlineNotification
             type="warning"
             text="This is a warning with a custom icon."
-            iconName="warning"
+            iconName="flag-checkered"
             style={styles.notificationSpacing}
           />
         </View>
