@@ -4,7 +4,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import InlineButton from '../../components/InlineButton';
-import { COLOURS } from '../../constants/colors';
+import { COLOURS } from '../../constants/colours';
 
 export default function ButtonTestPage() {
   const handleStandardPress = () => {

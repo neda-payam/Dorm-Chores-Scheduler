@@ -2,7 +2,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 interface HeaderBackButtonProps {
   onPress?: () => void;

@@ -6,7 +6,7 @@ import CurvedBanner from '../../components/CurvedBanner';
 import InlineButton from '../../components/InlineButton';
 import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
-import { COLOURS } from '../../constants/colors';
+import { COLOURS } from '../../constants/colours';
 
 type AuthAction = 'resetPassword' | 'signIn' | 'signUp';
 

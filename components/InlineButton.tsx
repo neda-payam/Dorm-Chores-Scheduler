@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, TextStyle } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 interface InlineButtonProps {
   title: string;

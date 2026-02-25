@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 type ButtonVariant = 'standard' | 'secondary' | 'tertiary' | 'danger';
 

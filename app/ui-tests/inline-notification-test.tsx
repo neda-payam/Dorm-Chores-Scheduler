@@ -3,7 +3,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import InlineNotification from '../../components/InlineNotification';
-import { COLOURS } from '../../constants/colors';
+import { COLOURS } from '../../constants/colours';
 
 export default function InlineNotificationTest() {
   return (

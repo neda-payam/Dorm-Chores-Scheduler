@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableHighlight, View } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 interface ListItemProps {
   title: string;

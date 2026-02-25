@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 type BannerVariant = 'large' | 'medium' | 'small';
 

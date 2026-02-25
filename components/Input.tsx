@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 type InputState = 'default' | 'focus' | 'error';
 

@@ -3,7 +3,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import CurvedBanner from '../../components/CurvedBanner';
 import HeaderBackButton from '../../components/HeaderBackButton';
-import { COLOURS } from '../../constants/colors';
+import { COLOURS } from '../../constants/colours';
 
 export default function CurvedBannerTest() {
   return (

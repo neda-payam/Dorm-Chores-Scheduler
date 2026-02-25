@@ -3,7 +3,7 @@ import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import ListItem from '../../components/ListItem';
-import { COLOURS } from '../../constants/colors';
+import { COLOURS } from '../../constants/colours';
 
 export default function ListItemTestPage() {
   const handlePress = (itemName: string) => {

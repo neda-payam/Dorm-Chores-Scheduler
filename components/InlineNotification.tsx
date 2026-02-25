@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 type NotificationType = 'error' | 'warning' | 'info' | 'success' | 'tip';
 

@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { COLOURS } from '../constants/colors';
+import { COLOURS } from '../constants/colours';
 
 export default function Index() {
   return (

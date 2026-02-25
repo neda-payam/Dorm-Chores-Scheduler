@@ -5,7 +5,7 @@ import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import Input from '../../components/Input';
 import InputCode from '../../components/InputCode';
-import { COLOURS } from '../../constants/colors';
+import { COLOURS } from '../../constants/colours';
 
 export default function InputTest() {
   const [defaultValue, setDefaultValue] = useState('');
