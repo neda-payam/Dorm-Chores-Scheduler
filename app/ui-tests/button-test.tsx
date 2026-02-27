@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import React from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from '../../components/Button';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import InlineButton from '../../components/InlineButton';
@@ -31,7 +31,7 @@ export default function ButtonTestPage() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         <View style={styles.header}>
           <HeaderBackButton />
         </View>
@@ -100,7 +100,7 @@ export default function ButtonTestPage() {
         </View>
 
         <Spacer size="large" />
-      </View>
+      </ScrollView>
     </>
   );
 }
