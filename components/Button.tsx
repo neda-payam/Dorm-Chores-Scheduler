@@ -167,9 +167,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   text: {
-    fontFamily: 'Inter',
+    fontFamily: 'Inter-Bold',
     fontSize: 16,
-    fontWeight: '700',
   },
   standard: {
     backgroundColor: COLOURS.primaryLight,

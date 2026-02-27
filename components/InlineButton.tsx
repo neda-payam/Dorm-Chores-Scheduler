@@ -57,8 +57,7 @@ export default function InlineButton({
       onPress={disabled ? undefined : onPress}
       style={[
         {
-          fontFamily: 'Inter',
-          fontWeight: '700',
+          fontFamily: 'Inter-Bold',
           textDecorationLine: 'underline',
           // Apply disabled color when button is disabled
           color: disabled ? COLOURS.disabled : COLOURS.primary,

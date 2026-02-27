@@ -90,8 +90,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
   },
   title: {
-    fontFamily: 'Inter',
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Black',
     fontSize: 56,
     color: COLOURS.primary,
   },
@@ -101,9 +100,8 @@ const styles = StyleSheet.create({
     color: COLOURS.primary,
   },
   inputLabel: {
-    fontFamily: 'Inter',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
-    fontWeight: 'bold',
     color: COLOURS.black,
     marginBottom: 8,
   },
@@ -111,7 +109,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 16,
     color: COLOURS.black,
-    fontWeight: '400',
   },
   centerText: {
     textAlign: 'center',

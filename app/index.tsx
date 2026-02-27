@@ -29,12 +29,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
+    fontFamily: 'Inter-Bold',
     fontSize: 24,
-    fontWeight: 'bold',
     marginBottom: 10,
     color: COLOURS.gray[800],
   },
   subtitle: {
+    fontFamily: 'Inter',
     fontSize: 16,
     color: COLOURS.gray[700],
     textAlign: 'center',
@@ -44,9 +45,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   linkText: {
+    fontFamily: 'Inter-SemiBold',
     color: COLOURS.gray[800],
     fontSize: 16,
-    fontWeight: '600',
     textAlign: 'center',
   },
 });

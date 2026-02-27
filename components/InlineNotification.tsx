@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
     maxHeight: 20,
   },
   text: {
+    fontFamily: 'Inter',
     fontSize: 12,
     flex: 1,
   },

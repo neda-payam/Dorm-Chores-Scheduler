@@ -119,31 +119,35 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   title: {
+    fontFamily: 'Inter-Bold',
     fontSize: 28,
-    fontWeight: 'bold',
     color: COLOURS.black,
   },
   subtitle: {
+    fontFamily: 'Inter',
     fontSize: 16,
     color: COLOURS.gray[700],
     lineHeight: 22,
   },
   sectionTitle: {
+    fontFamily: 'Inter-Bold',
     fontSize: 22,
-    fontWeight: 'bold',
     color: COLOURS.black,
   },
   bodyText: {
+    fontFamily: 'Inter',
     fontSize: 16,
     color: COLOURS.black,
     lineHeight: 24,
   },
   largeText: {
+    fontFamily: 'Inter',
     fontSize: 20,
     color: COLOURS.black,
     lineHeight: 28,
   },
   smallText: {
+    fontFamily: 'Inter',
     fontSize: 12,
     color: COLOURS.black,
     lineHeight: 18,

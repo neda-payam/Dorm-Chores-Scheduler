@@ -166,10 +166,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   input: {
+    fontFamily: 'Inter',
     fontSize: 18,
     lineHeight: 24,
-    fontFamily: 'Inter',
-    fontWeight: '600',
     color: COLOURS.input.text,
     paddingHorizontal: 8,
     paddingVertical: 0,

@@ -160,16 +160,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
+    fontFamily: 'Inter-Bold',
     fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: 'Inter',
     color: COLOURS.black,
     lineHeight: 28,
   },
   subtitle: {
-    fontSize: 14,
     fontFamily: 'Inter',
-    fontWeight: 'normal',
+    fontSize: 14,
     color: COLOURS.gray[700],
     lineHeight: 18,
     flexWrap: 'wrap',
