@@ -22,9 +22,8 @@ export default function SignIn() {
 
   const handleAction = useCallback(
     async (action: AuthAction) => {
-      console.log('BEFORE signIn:', { action, email, password });
-
       setNotice(null);
+      console.log('BEFORE signIn:', { action, email, password });
 
       // basic validation
       if (!email.trim()) {
@@ -43,6 +42,20 @@ export default function SignIn() {
         });
 
         console.log('AFTER signUp:', { data, error });
+
+        if (error) {
+          setNotice({
+            type: 'error',
+            text: error.message,
+          });
+          return;
+        }
+
+        setNotice({
+          type: 'success',
+          text: 'Account created. Please check your email to confirm your account.',
+        });
+
         return;
       }
 
@@ -74,6 +87,20 @@ export default function SignIn() {
         const { data, error } = await supabase.auth.resetPasswordForEmail(email);
 
         console.log('AFTER resetPassword:', { data, error });
+
+        if (error) {
+          setNotice({
+            type: 'error',
+            text: error.message,
+          });
+          return;
+        }
+
+        setNotice({
+          type: 'success',
+          text: 'Password reset email sent. Please check your inbox.',
+        });
+
         return;
       }
 
