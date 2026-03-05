@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import Button from '../../components/Button';
@@ -61,7 +61,10 @@ export default function SignIn() {
 
             <Text style={styles.bodyText}>
               Forgot your password?{' '}
-              <InlineButton title="Reset password" onPress={() => handleAction('resetPassword')} />
+              <InlineButton
+                title="Reset password"
+                onPress={() => router.push('/auth/reset-password')}
+              />
             </Text>
 
             <Spacer size="large" />
