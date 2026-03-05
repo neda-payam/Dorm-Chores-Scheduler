@@ -1,14 +1,6 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+import { Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
 import Button from '../../components/Button';
 import CurvedBanner from '../../components/CurvedBanner';
 import InlineButton from '../../components/InlineButton';
@@ -36,55 +28,47 @@ export default function ResetPassword() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-          <View style={styles.container}>
-            <CurvedBanner variant="large" />
-            <Spacer size="large" />
+      <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+        <View style={styles.container}>
+          <CurvedBanner variant="large" />
+          <Spacer size="large" />
 
-            <View style={styles.content}>
-              <Text style={styles.title}>RESET PASSWORD</Text>
-              <Text style={styles.subtitle}>Please fill out the details below</Text>
-            </View>
-
-            <Spacer size="large" />
-
-            <View style={styles.content}>
-              <Text style={styles.inputLabel}>Email address</Text>
-              <Input
-                value={email}
-                onChangeText={setEmail}
-                placeholder="example@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                textContentType="emailAddress"
-                autoComplete="email"
-              />
-
-              <Spacer size="large" />
-
-              <Button
-                title="Reset password"
-                onPress={handleReset}
-                variant="standard"
-                disabled={!email.trim()}
-              />
-              <Spacer size="large" />
-
-              <Text style={[styles.bodyText, styles.centerText]}>
-                No longer needed?{' '}
-                <InlineButton
-                  title="Return to Sign in"
-                  onPress={() => router.push('/auth/signin')}
-                />
-              </Text>
-            </View>
+          <View style={styles.content}>
+            <Text style={styles.title}>RESET PASSWORD</Text>
+            <Text style={styles.subtitle}>Please fill out the details below</Text>
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+
+          <Spacer size="large" />
+
+          <View style={styles.content}>
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <Input
+              value={email}
+              onChangeText={setEmail}
+              placeholder="example@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              textContentType="emailAddress"
+              autoComplete="email"
+            />
+
+            <Spacer size="large" />
+
+            <Button
+              title="Reset password"
+              onPress={handleReset}
+              variant="standard"
+              disabled={!email.trim()}
+            />
+            <Spacer size="large" />
+
+            <Text style={[styles.bodyText, styles.centerText]}>
+              No longer needed?{' '}
+              <InlineButton title="Return to Sign in" onPress={() => router.push('/auth/signin')} />
+            </Text>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
     </>
   );
 }
