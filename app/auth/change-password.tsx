@@ -5,11 +5,14 @@ import Button from '../../components/Button';
 import CurvedBanner from '../../components/CurvedBanner';
 import InlineButton from '../../components/InlineButton';
 import Input from '../../components/Input';
+import InputCode from '../../components/InputCode';
 import Spacer from '../../components/Spacer';
 import { COLOURS } from '../../constants/colours';
 
 export default function ResetPassword() {
-  const [email, setEmail] = useState('');
+  const [email] = useState('');
+  const [codeValue, setCodeValue] = useState('');
+  const [password, setPassword] = useState('');
 
   const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
@@ -30,36 +33,58 @@ export default function ResetPassword() {
 
       <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
         <View style={styles.container}>
-          <CurvedBanner variant="large" />
-          <Spacer size="large" />
+          <CurvedBanner variant="medium" />
+          <Spacer size="medium" />
 
           <View style={styles.content}>
-            <Text style={styles.title}>RESET PASSWORD</Text>
+            <Text style={styles.title}>CHANGE PASSWORD</Text>
             <Text style={styles.subtitle}>Please fill out the details below</Text>
           </View>
 
-          <Spacer size="large" />
+          <Spacer size="medium" />
 
           <View style={styles.content}>
-            <Text style={styles.inputLabel}>Email Address</Text>
+            <Text style={styles.inputLabel}>Confirmation code</Text>
+            <Text style={[styles.description, styles.inputMargin]}>
+              The code you recieved via email
+            </Text>
+
+            <Spacer size="small" />
+
+            <InputCode
+              value={codeValue}
+              onChangeText={setCodeValue}
+              onComplete={(code) => console.log('Code completed:', code)}
+            />
+          </View>
+
+          <Spacer size="medium" />
+
+          <View style={styles.content}>
+            <Text style={[styles.inputLabel, styles.inputMargin]}>Password</Text>
             <Input
-              value={email}
-              onChangeText={setEmail}
-              placeholder="example@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              textContentType="emailAddress"
-              autoComplete="email"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry
             />
 
-            <Spacer size="large" />
+            <Spacer size="medium" />
 
-            <Button
-              title="Reset password"
-              onPress={() => router.push('/auth/change-password')}
-              variant="standard"
+            <Text style={[styles.inputLabel, styles.inputMargin]}>Confirm password</Text>
+            <Input
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Confirm your password"
+              secureTextEntry
             />
-            <Spacer size="large" />
+
+            <Spacer size="small" />
+
+            <Spacer size="medium" />
+
+            <Button title="Change password" onPress={handleReset} variant="standard" />
+            <Spacer size="medium" />
 
             <Text style={[styles.bodyText, styles.centerText]}>
               No longer needed?{' '}
@@ -94,6 +119,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     fontSize: 14,
     color: COLOURS.black,
+  },
+  inputMargin: {
     marginBottom: 8,
   },
   bodyText: {
@@ -103,5 +130,16 @@ const styles = StyleSheet.create({
   },
   centerText: {
     textAlign: 'center',
+  },
+  sectionTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 22,
+    color: COLOURS.black,
+  },
+  description: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    lineHeight: 18,
   },
 });
