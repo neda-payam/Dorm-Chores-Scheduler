@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Keyboard,
@@ -180,7 +180,11 @@ export default function SignIn() {
         <Spacer size="small" />
 
         <Text style={styles.bodyText}>
-          Forgot your password? <InlineButton title="Reset password" onPress={() => {}} />
+          Forgot your password?{' '}
+          <InlineButton
+            title="Reset password"
+            onPress={() => router.push('/auth/reset-password')}
+          />
         </Text>
 
         <Spacer size="large" />
@@ -193,6 +197,13 @@ export default function SignIn() {
             <InlineNotification type={notice.type} text={notice.text} />
           </>
         )}
+
+        <Spacer size="large" />
+
+        <Text style={[styles.bodyText, styles.centerText]}>
+          Don&apos;t have an account?{' '}
+          <InlineButton title="Sign Up" onPress={() => router.push('/auth/account-type')} />
+        </Text>
 
         <Spacer size="large" />
       </View>
