@@ -56,7 +56,7 @@ export default function ResetPassword() {
 
             <Button
               title="Reset password"
-              onPress={() => router.push('/auth/change-password')}
+              onPress={handleReset}
               variant="standard"
             />
             <Spacer size="large" />
