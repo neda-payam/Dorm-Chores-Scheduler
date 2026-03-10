@@ -1,6 +1,7 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -9,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
+
 import Button from '../../components/Button';
 import CurvedBanner from '../../components/CurvedBanner';
 import InlineButton from '../../components/InlineButton';
@@ -30,6 +32,17 @@ export default function ResetPassword() {
   } | null>(null);
 
   useEffect(() => {
+    const backAction = () => {
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, []);
+
+  // Track keyboard visibility for KeyboardAvoidingView offset
+  useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
     });
@@ -42,6 +55,7 @@ export default function ResetPassword() {
     };
   }, []);
 
+  // Clear all errors
   const clearErrors = () => {
     setEmailError(null);
     setNotice(null);
@@ -49,27 +63,38 @@ export default function ResetPassword() {
 
   const handleReset = useCallback(async () => {
     clearErrors();
+
+    // Presence checks
     const emailRequired = validateRequired(email, 'Email address');
     if (!emailRequired.isValid) {
       setEmailError(emailRequired.error!);
       return;
     }
+
+    // SQL injection checks
     const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
     if (!emailSqlCheck.isValid) {
       setEmailError(emailSqlCheck.error!);
       return;
     }
+
     const normalisedEmail = normaliseEmail(email);
     const { error } = await supabase.auth.resetPasswordForEmail(normalisedEmail);
+
     if (error) {
       setNotice({ type: 'error', text: error.message });
       return;
     }
+
     setNotice({
       type: 'success',
       text: 'Password reset email sent. Please check your inbox.',
     });
-    router.push('/auth/change-password');
+
+    router.push({
+      pathname: '/auth/change-password',
+      params: { email },
+    });
   }, [email]);
 
   const scrollContent = (
@@ -131,7 +156,7 @@ export default function ResetPassword() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -164,6 +189,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Black',
     fontSize: 56,
     color: COLOURS.primary,
+    lineHeight: 56,
   },
   subtitle: {
     fontFamily: 'Inter',
