@@ -54,11 +54,7 @@ export default function ResetPassword() {
 
             <Spacer size="large" />
 
-            <Button
-              title="Reset password"
-              onPress={handleReset}
-              variant="standard"
-            />
+            <Button title="Reset password" onPress={handleReset} variant="standard" />
             <Spacer size="large" />
 
             <Text style={[styles.bodyText, styles.centerText]}>
