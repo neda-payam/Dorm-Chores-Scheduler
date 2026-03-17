@@ -32,7 +32,7 @@
  *
  * @props
  * - type: 'error' | 'warning' | 'info' | 'success' | 'tip' - Notification type (determines colors and default icon)
- * - text: string - The notification message to display
+ * - text: React.ReactNode - The notification message to display
  * - iconName?: keyof FontAwesome5.glyphMap - Custom icon override (defaults based on type)
  * - style?: ViewStyle - Custom styles for the notification container
  */
@@ -47,7 +47,7 @@ type NotificationType = 'error' | 'warning' | 'info' | 'success' | 'tip';
 
 interface InlineNotificationProps {
   type: NotificationType;
-  text: string;
+  text: React.ReactNode;
   iconName?: keyof typeof FontAwesome5.glyphMap;
   style?: ViewStyle;
 }
@@ -140,7 +140,13 @@ export default function InlineNotification({
           style={styles.icon}
         />
       </View>
-      <Text style={[styles.text, { color: typeStyles.textColor }]}>{text}</Text>
+      {/* Render text as a React node, allowing inline styling and nested <Text> elements */}
+      {typeof text === 'string' ? (
+        <Text style={[styles.text, { color: typeStyles.textColor }]}>{text}</Text>
+      ) : (
+        // If text is a React node, wrap in a parent <Text> for proper styling
+        <Text style={[styles.text, { color: typeStyles.textColor }]}>{text}</Text>
+      )}
     </View>
   );
 }

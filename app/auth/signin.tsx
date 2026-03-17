@@ -1,6 +1,7 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -30,6 +31,16 @@ export default function SignIn() {
     type: 'error' | 'success' | 'info' | 'warning' | 'tip';
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    const backAction = () => {
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, []);
 
   // Track keyboard visibility for KeyboardAvoidingView offset
   useEffect(() => {
@@ -104,30 +115,7 @@ export default function SignIn() {
       type: 'success',
       text: 'Signed in successfully!',
     });
-
-    // TODO: Password reset will be on a separate page
-    // if (action === 'resetPassword') {
-    //   const emailRequired = validateRequired(email, 'Email address');
-    //   if (!emailRequired.isValid) {
-    //     setFieldError(emailRequired.error!);
-    //     return;
-    //   }
-    //   const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
-    //   if (!emailSqlCheck.isValid) {
-    //     setFieldError(emailSqlCheck.error!);
-    //     return;
-    //   }
-    //   const normalisedEmail = normaliseEmail(email);
-    //   const { error } = await supabase.auth.resetPasswordForEmail(normalisedEmail);
-    //   if (error) {
-    //     setNotice({ type: 'error', text: error.message });
-    //     return;
-    //   }
-    //   setNotice({
-    //     type: 'success',
-    //     text: 'Password reset email sent. Please check your inbox.',
-    //   });
-    // }
+    router.push('/');
   }, [email, password]);
 
   const scrollContent = (
@@ -212,7 +200,7 @@ export default function SignIn() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
