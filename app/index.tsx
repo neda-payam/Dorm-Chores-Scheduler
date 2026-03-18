@@ -16,6 +16,14 @@ export default function Index() {
         <Link href="/ui-tests">
           <Text style={styles.linkText}>Go to UI Test Page</Text>
         </Link>
+
+        <Link href="/main/manager/dashboard">
+          <Text style={styles.linkText}>Go to Manager Dashboard</Text>
+        </Link>
+
+        <Link href="/main/student/home">
+          <Text style={styles.linkText}>Go to Student Home</Text>
+        </Link>
       </View>
     </View>
   );
