@@ -1,18 +1,18 @@
 /**
  * @file ProfilePicture.tsx
  * @description A circular profile picture component with two size variants.
- *              'small' acts as a nav button in the top bar; 'large' sits on
- *              the profile page and exposes a camera button for photo uploads.
- *              Falls back to a bundled placeholder silhouette when no URI is set.
+ *              'small' (44x44) acts as a tappable nav button in the top bar.
+ *              'large' (128x128) sits on the profile page with a camera button overlay for photo uploads.
+ *              Falls back to a bundled placeholder silhouette when no URI is provided.
  *
  * @usage
  * ```tsx
  * import ProfilePicture from '@/components/ProfilePicture';
  *
- * // Small – top bar nav button
+ * // Small - top bar nav button
  * <ProfilePicture variant="small" onPress={() => router.push('/profile')} />
  *
- * // Large – profile page header with optional current image
+ * // Large - profile page header with optional current image
  * <ProfilePicture
  *   variant="large"
  *   imageUri={user.avatarUrl}
@@ -24,8 +24,7 @@
  * - variant: 'small' | 'large' - Size and behaviour mode
  * - imageUri?: string - Remote or local URI for the profile image
  * - onPress?: () => void - (small only) Called when the avatar is tapped
- * - onImageChange?: (uri: string) => void - (large only) Called with the
- *   chosen image URI once upload succeeds (placeholder for backend wiring)
+ * - onImageChange?: (uri: string) => void - (large only) Called with the chosen image URI once upload succeeds
  * - style?: ViewStyle - Custom styles for the outer wrapper
  */
 
@@ -78,7 +77,7 @@ export default function ProfilePicture({
     let result: ImagePicker.ImagePickerResult;
     try {
       result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -98,7 +97,7 @@ export default function ProfilePicture({
       return;
     }
 
-    // 4. Simulate upload - replace this block with real upload logic
+    // 4. Simulate upload — replace this block with real upload logic
     simulateUpload(asset.uri);
   };
 
@@ -127,7 +126,7 @@ export default function ProfilePicture({
           [{ text: 'OK' }],
         ),
       () => {
-        // Success path - passes URI back to parent for optimistic UI update
+        // Success path — passes URI back to parent for optimistic UI update
         onImageChange?.(uri);
         Alert.alert('Profile Picture Updated', 'Your new profile picture has been saved.', [
           { text: 'Great!' },
