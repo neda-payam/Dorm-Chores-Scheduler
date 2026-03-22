@@ -34,6 +34,13 @@ export default function UITestHub() {
           />
           <Spacer size="small" />
           <ListItem
+            title="Block Button Component"
+            subtitle="Test quick-action block button layouts and states"
+            iconName="th-large"
+            onPress={() => router.push('/ui-tests/block-button-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
             title="List Item Component"
             subtitle="Test list item layouts and interactions"
             iconName="list"
