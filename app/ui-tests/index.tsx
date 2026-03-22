@@ -48,6 +48,13 @@ export default function UITestHub() {
           />
           <Spacer size="small" />
           <ListItem
+            title="Profile Picture Component"
+            subtitle="Test small nav avatar and large editable avatar"
+            iconName="user-circle"
+            onPress={() => router.push('/ui-tests/profile-picture-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
             title="List Item Component"
             subtitle="Test list item layouts and interactions"
             iconName="list"

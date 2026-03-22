@@ -132,7 +132,7 @@ export default function NavBarTestPage() {
         <Spacer size="large" />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Static — First Active</Text>
+          <Text style={styles.sectionTitle}>Static - First Active</Text>
           <Spacer size="small" />
           <View style={styles.navBarContainer}>
             <NavBar
@@ -150,7 +150,7 @@ export default function NavBarTestPage() {
         <Spacer size="small" />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Static — Last Active</Text>
+          <Text style={styles.sectionTitle}>Static - Last Active</Text>
           <Spacer size="small" />
           <View style={styles.navBarContainer}>
             <NavBar
