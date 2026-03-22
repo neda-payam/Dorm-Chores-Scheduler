@@ -67,6 +67,13 @@ export default function UITestHub() {
             iconName="image"
             onPress={() => router.push('/ui-tests/curved-banner-test')}
           />
+          <Spacer size="small" />
+          <ListItem
+            title="NavBar Component"
+            subtitle="Test navigation bar layouts and active states"
+            iconName="grip-horizontal"
+            onPress={() => router.push('/ui-tests/navbar-test')}
+          />
         </View>
 
         <Spacer size="large" />
