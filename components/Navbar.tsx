@@ -1,6 +1,6 @@
 /**
  * @file NavBar.tsx
- * @description A bottom navigation bar with 2–4 icon-and-label tab buttons.
+ * @description A bottom navigation bar with 2-4 icon-and-label tab buttons.
  *              Active tabs are non-interactable and rendered in the active colour.
  *              A 2 px gradient stripe sits above the 80 px bar body.
  *
@@ -20,7 +20,7 @@
  * ```
  *
  * @props
- * - items: NavBarItem[] - Array of 2–4 navigation items
+ * - items: NavBarItem[] - Array of 2-4 navigation items
  * - activeKey: string - The `key` of the currently active tab
  * - style?: ViewStyle - Custom styles for the outer container
  */
