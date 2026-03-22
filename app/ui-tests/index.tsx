@@ -41,6 +41,13 @@ export default function UITestHub() {
           />
           <Spacer size="small" />
           <ListItem
+            title="Availability Badge Component"
+            subtitle="Test availability status dropdown and states"
+            iconName="toggle-on"
+            onPress={() => router.push('/ui-tests/availability-badge-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
             title="List Item Component"
             subtitle="Test list item layouts and interactions"
             iconName="list"
