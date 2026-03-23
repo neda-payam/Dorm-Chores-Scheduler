@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   production_release:
     if: false # Temporarily disable production release workflow until we are ready to submit to app stores.
