@@ -8,7 +8,7 @@
     "scheme": "dormchoresscheduler",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.setap20252026.group7.teamc.dormchoresscheduler"
+      "bundleIdentifier": "com.setap20252026.group7.teamc.dormchoresscheduler",
       "supportsTablet": false,
       "infoPlist": { "NSPhotoLibraryUsageDescription": "..." }
     },
