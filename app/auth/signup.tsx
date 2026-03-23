@@ -7,15 +7,106 @@ import InlineButton from '../../components/InlineButton';
 import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
 import { COLOURS } from '../../constants/colours';
+import InlineNotification from '../../components/InlineNotification';
+import { supabase } from '../../lib/supabase';
+import {
+  normaliseEmail,
+  sanitiseInput,
+  validateDisplayName,
+  validateSignUpFields,
+} from '../../lib/validation';
 
 export default function SignUp() {
+  // Form state: display name, email, password, confirm password
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [defaultValue, setDefaultValue] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [notice, setNotice] = useState<{
+    type: 'error' | 'success' | 'info' | 'warning' | 'tip';
+    text: string;
+  } | null>(null);
 
   const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
   }, []);
+
+  const handleSignUp = useCallback(async () => {
+    setNotice(null);
+
+    const trimmedDisplayName = sanitiseInput(displayName);
+    const trimmedEmail = normaliseEmail(email);
+
+    if (!trimmedDisplayName || !trimmedEmail || !password || !confirmPassword) {
+      setNotice({
+        type: 'error',
+        text: 'Please fill in all fields.',
+      });
+      return;
+    }
+
+    const displayNameResult = validateDisplayName(trimmedDisplayName);
+    if (!displayNameResult.isValid) {
+      setNotice({
+        type: 'error',
+        text: displayNameResult.error || 'Invalid display name.',
+      });
+      return;
+    }
+
+    const signUpValidationResult = validateSignUpFields(trimmedEmail, password);
+    if (!signUpValidationResult.isValid) {
+      setNotice({
+        type: 'error',
+        text: signUpValidationResult.error || 'Invalid sign up details.',
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setNotice({
+        type: 'error',
+        text: 'Passwords do not match.',
+      });
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        data: {
+          display_name: trimmedDisplayName,
+        },
+      },
+    });
+
+    console.log('AFTER signUp:', { data, error });
+
+    if (error) {
+      setNotice({
+        type: 'error',
+        text: error.message,
+      });
+      return;
+    }
+
+    setNotice({
+      type: 'info',
+      text: 'Account created. Please check your email to confirm your account.',
+    });
+
+    // TODO: Later pass the user's email to the confirm-email screen
+    // so it can display the real email instead of a hardcoded one.
+    // Example future implementation:
+    // router.push({
+    //   pathname: '/auth/confirm-email',
+    //   params: { email: trimmedEmail },
+    // });
+
+    router.push('/auth/confirm-email');
+  }, [displayName, email, password, confirmPassword]);
 
   return (
     <>
@@ -34,7 +125,7 @@ export default function SignUp() {
 
           <View style={styles.content}>
             <Text style={styles.inputLabel}>Display Name</Text>
-            <Input value={defaultValue} onChangeText={setDefaultValue} placeholder="Example Name" />
+            <Input value={displayName} onChangeText={setDisplayName} placeholder="Example Name" />
           </View>
 
           <Spacer size="medium" />
@@ -63,15 +154,21 @@ export default function SignUp() {
 
             <Text style={[styles.inputLabel, styles.inputMargin]}>Confirm password</Text>
             <Input
-              value={password}
-              onChangeText={setPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
               placeholder="Confirm your password"
               secureTextEntry
             />
 
             <Spacer size="medium" />
+            {notice && (
+              <>
+                <InlineNotification type={notice.type} text={notice.text} />
+                <Spacer size="medium" />
+              </>
+            )}
 
-            <Button title="Sign Up" onPress={() => router.push('/auth/confirm-email')} />
+            <Button title="Sign Up" onPress={handleSignUp} />
             <Spacer size="medium" />
 
             <Text style={[styles.bodyText, styles.centerText]}>

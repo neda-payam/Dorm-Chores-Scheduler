@@ -4,24 +4,54 @@ import { Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'reac
 import Button from '../../components/Button';
 import CurvedBanner from '../../components/CurvedBanner';
 import InlineButton from '../../components/InlineButton';
+import InlineNotification from '../../components/InlineNotification';
 import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
 import { COLOURS } from '../../constants/colours';
+import { supabase } from '../../lib/supabase';
+import { normaliseEmail, validateResetPasswordFields } from '../../lib/validation';
 
 export default function ResetPassword() {
   const [email, setEmail] = useState('');
+  const [notice, setNotice] = useState<{
+    type: 'error' | 'success' | 'info' | 'warning' | 'tip';
+    text: string;
+  } | null>(null);
 
   const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
   }, []);
 
-  const handleReset = useCallback(() => {
-    if (!email.trim()) {
-      console.log('Email is required');
+  const handleReset = useCallback(async () => {
+    setNotice(null);
+
+    const trimmedEmail = normaliseEmail(email);
+
+    const resetValidationResult = validateResetPasswordFields(trimmedEmail);
+    if (!resetValidationResult.isValid) {
+      setNotice({
+        type: 'error',
+        text: resetValidationResult.error || 'Invalid email address.',
+      });
       return;
     }
 
-    console.log('Reset password triggered');
+    const { data, error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
+
+    console.log('AFTER resetPassword:', { data, error });
+
+    if (error) {
+      setNotice({
+        type: 'error',
+        text: error.message,
+      });
+      return;
+    }
+
+    setNotice({
+      type: 'info',
+      text: 'If an account exists for this email, a password reset link has been sent.',
+    });
   }, [email]);
 
   return (
@@ -53,6 +83,12 @@ export default function ResetPassword() {
             />
 
             <Spacer size="large" />
+            {notice && (
+              <>
+                <InlineNotification type={notice.type} text={notice.text} />
+                <Spacer size="medium" />
+              </>
+            )}
 
             <Button title="Reset password" onPress={handleReset} variant="standard" />
             <Spacer size="large" />
