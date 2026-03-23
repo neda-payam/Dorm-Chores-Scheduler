@@ -7,10 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "dormchoresscheduler",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
       "bundleIdentifier": "com.setap20252026.group7.teamc.dormchoresscheduler"
+      "supportsTablet": false,
+      "infoPlist": { "NSPhotoLibraryUsageDescription": "..." }
     },
     "android": {
       "package": "com.setap20252026.group7.teamc.dormchoresscheduler",
@@ -20,8 +20,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "output": "static",
@@ -40,7 +40,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,
