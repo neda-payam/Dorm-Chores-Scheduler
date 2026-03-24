@@ -10,7 +10,9 @@
     "ios": {
       "bundleIdentifier": "com.setap20252026.group7.teamc.dormchoresscheduler",
       "supportsTablet": false,
-      "infoPlist": { "NSPhotoLibraryUsageDescription": "..." }
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "..."
+      }
     },
     "android": {
       "package": "com.setap20252026.group7.teamc.dormchoresscheduler",
@@ -41,7 +43,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
