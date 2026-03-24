@@ -1,6 +1,16 @@
-import { Stack, router } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  BackHandler,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
 import Button from '../../components/Button';
 import CurvedBanner from '../../components/CurvedBanner';
 import InlineButton from '../../components/InlineButton';
@@ -8,151 +18,263 @@ import InlineNotification from '../../components/InlineNotification';
 import Input from '../../components/Input';
 import InputCode from '../../components/InputCode';
 import Spacer from '../../components/Spacer';
+
 import { COLOURS } from '../../constants/colours';
 import { supabase } from '../../lib/supabase';
-import { validatePassword } from '../../lib/validation';
+import { validateNoSqlInjection, validatePassword, validateRequired } from '../../lib/validation';
 
 export default function ChangePassword() {
+  const { email } = useLocalSearchParams();
+
   const [codeValue, setCodeValue] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [notice, setNotice] = useState<{
-    type: 'error' | 'success' | 'info' | 'warning' | 'tip';
-    text: string;
-  } | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
 
-  const dismissKeyboard = useCallback(() => {
-    Keyboard.dismiss();
+  const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const backAction = () => true;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
   }, []);
 
-  const handleReset = useCallback(async () => {
-    setNotice(null);
+  useEffect(() => {
+    const showListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const hideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
 
-    if (!password || !confirmPassword) {
-      setNotice({
-        type: 'error',
-        text: 'Please enter and confirm your new password.',
-      });
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!email) {
+      router.push('/auth/reset-password');
+    }
+  }, [email]);
+
+  const clearErrors = () => {
+    setCodeError(null);
+    setPasswordError(null);
+    setConfirmPasswordError(null);
+    setNotice(null);
+  };
+
+  const handleReset = useCallback(async () => {
+    clearErrors();
+
+    const cleanedCode = codeValue.replace(/\D/g, '');
+
+    const emailValue = typeof email === 'string' ? email : '';
+
+    const codeRequired = validateRequired(cleanedCode, 'Confirmation code');
+    if (!codeRequired.isValid) {
+      setCodeError(codeRequired.error ?? 'Confirmation code is required.');
       return;
     }
 
-    const passwordValidationResult = validatePassword(password);
-    if (!passwordValidationResult.isValid) {
-      setNotice({
-        type: 'error',
-        text: passwordValidationResult.error || 'Invalid password.',
-      });
+    const passwordRequired = validateRequired(password, 'Password');
+    if (!passwordRequired.isValid) {
+      setPasswordError(passwordRequired.error ?? 'Password is required.');
+      return;
+    }
+
+    const confirmRequired = validateRequired(confirmPassword, 'Confirm password');
+    if (!confirmRequired.isValid) {
+      setConfirmPasswordError(confirmRequired.error ?? 'Confirm password is required.');
+      return;
+    }
+
+    const codeSqlCheck = validateNoSqlInjection(cleanedCode, 'Confirmation code');
+    if (!codeSqlCheck.isValid) {
+      setCodeError(codeSqlCheck.error ?? 'Confirmation code contains invalid characters.');
+      return;
+    }
+
+    const passwordSqlCheck = validateNoSqlInjection(password, 'Password');
+    if (!passwordSqlCheck.isValid) {
+      setPasswordError(passwordSqlCheck.error ?? 'Password contains invalid characters.');
+      return;
+    }
+
+    const confirmSqlCheck = validateNoSqlInjection(confirmPassword, 'Confirm password');
+    if (!confirmSqlCheck.isValid) {
+      setConfirmPasswordError(
+        confirmSqlCheck.error ?? 'Confirm password contains invalid characters.',
+      );
+      return;
+    }
+
+    const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
+    if (!codeFormatCheck) {
+      setCodeError('Confirmation code must be a 6-digit number.');
+      return;
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.error ?? 'Password is invalid.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setNotice({
-        type: 'error',
-        text: 'Passwords do not match.',
-      });
+      setConfirmPasswordError('Passwords do not match.');
       return;
     }
 
-    const { data, error } = await supabase.auth.updateUser({
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: emailValue,
+      token: cleanedCode,
+      type: 'recovery',
+    });
+
+    if (verifyError) {
+      setCodeError(verifyError.message);
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
       password,
     });
 
-    console.log('AFTER changePassword:', { data, error });
-
-    if (error) {
+    if (updateError) {
       setNotice({
         type: 'error',
-        text: error.message,
+        text: updateError.message,
       });
       return;
     }
 
     setNotice({
       type: 'success',
-      text: 'Password changed successfully. Please sign in.',
+      text: 'Password changed successfully! Please sign in with your new password.',
     });
 
-    router.push('/auth/signin');
-  }, [password, confirmPassword]);
+    setTimeout(() => {
+      router.push('/auth/signin');
+    }, 1500);
+  }, [codeValue, confirmPassword, email, password]);
+
+  const scrollContent = (
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <CurvedBanner variant="small" />
+      <Spacer size="large" />
+
+      <View style={styles.content}>
+        <Text style={styles.title}>CHANGE PASSWORD</Text>
+        <Text style={styles.subtitle}>Please fill out the details below</Text>
+      </View>
+
+      <Spacer size="medium" />
+
+      <View style={styles.content}>
+        <InlineNotification
+          type="info"
+          text={
+            email ? (
+              <Text>
+                We have sent a confirmation code to{' '}
+                <Text style={styles.boldUnderline}>{email}</Text>.
+              </Text>
+            ) : (
+              'We have sent a confirmation code to your email.'
+            )
+          }
+        />
+
+        <Spacer size="medium" />
+
+        <Text style={styles.inputLabel}>Confirmation code</Text>
+        <Text style={styles.description}>The code you received via email</Text>
+
+        <Spacer size="small" />
+
+        <InputCode
+          value={codeValue}
+          onChangeText={setCodeValue}
+          onComplete={(code) => console.log('Code completed:', code)}
+        />
+        {codeError && <InlineNotification type="error" text={codeError} style={{ marginTop: 4 }} />}
+
+        <Spacer size="medium" />
+
+        <Text style={styles.inputLabel}>Password</Text>
+        <Input
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Enter your password"
+          secureTextEntry
+          hasError={!!passwordError}
+        />
+        {passwordError && (
+          <InlineNotification type="error" text={passwordError} style={{ marginTop: 4 }} />
+        )}
+
+        <Spacer size="medium" />
+
+        <Text style={styles.inputLabel}>Confirm password</Text>
+        <Input
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          placeholder="Confirm your password"
+          secureTextEntry
+          hidePasswordToggle={true}
+          hasError={!!confirmPasswordError}
+        />
+        {confirmPasswordError && (
+          <InlineNotification type="error" text={confirmPasswordError} style={{ marginTop: 4 }} />
+        )}
+
+        <Spacer size="large" />
+
+        <Button title="Change password" onPress={handleReset} variant="standard" />
+
+        {notice && (
+          <>
+            <Spacer size="medium" />
+            <InlineNotification type={notice.type} text={notice.text} />
+          </>
+        )}
+
+        <Spacer size="large" />
+
+        <Text style={[styles.bodyText, styles.centerText]}>
+          No longer needed?{' '}
+          <InlineButton title="Return to Sign in" onPress={() => router.push('/auth/signin')} />
+        </Text>
+
+        <Spacer size="large" />
+      </View>
+    </ScrollView>
+  );
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-        <View style={styles.container}>
-          <CurvedBanner variant="medium" />
-          <Spacer size="medium" />
-
-          <View style={styles.content}>
-            <Text style={styles.title}>CHANGE PASSWORD</Text>
-            <Text style={styles.subtitle}>Please fill out the details below</Text>
-          </View>
-
-          <Spacer size="medium" />
-          {/* NOTE:
-            Supabase reset flow uses email reset link.
-            Confirmation code UI currently not connected to backend.
-            */}
-
-          <View style={styles.content}>
-            <Text style={styles.inputLabel}>Confirmation code</Text>
-            <Text style={[styles.description, styles.inputMargin]}>
-              The code you received via email
-            </Text>
-
-            <Spacer size="small" />
-
-            <InputCode
-              value={codeValue}
-              onChangeText={setCodeValue}
-              onComplete={(code) => console.log('Code completed:', code)}
-            />
-          </View>
-
-          <Spacer size="medium" />
-
-          <View style={styles.content}>
-            <Text style={[styles.inputLabel, styles.inputMargin]}>Password</Text>
-            <Input
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-            />
-
-            <Spacer size="medium" />
-
-            <Text style={[styles.inputLabel, styles.inputMargin]}>Confirm password</Text>
-            <Input
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Confirm your password"
-              secureTextEntry
-            />
-
-            <Spacer size="small" />
-            <Spacer size="medium" />
-
-            {notice && (
-              <>
-                <InlineNotification type={notice.type} text={notice.text} />
-                <Spacer size="medium" />
-              </>
-            )}
-
-            <Button title="Change password" onPress={handleReset} variant="standard" />
-            <Spacer size="medium" />
-
-            <Text style={[styles.bodyText, styles.centerText]}>
-              No longer needed?{' '}
-              <InlineButton title="Return to Sign in" onPress={() => router.push('/auth/signin')} />
-            </Text>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-    </>
+    <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={keyboardVisible ? 0 : -80}
+      >
+        {scrollContent}
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -161,6 +283,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLOURS.white,
   },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
     marginHorizontal: 24,
   },
@@ -168,6 +299,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Black',
     fontSize: 56,
     color: COLOURS.primary,
+    lineHeight: 56,
   },
   subtitle: {
     fontFamily: 'Inter',
@@ -178,9 +310,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     fontSize: 14,
     color: COLOURS.black,
-  },
-  inputMargin: {
     marginBottom: 8,
+  },
+  description: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: COLOURS.black,
+    lineHeight: 12,
   },
   bodyText: {
     fontFamily: 'Inter',
@@ -190,15 +326,8 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
   },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    color: COLOURS.black,
-  },
-  description: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: COLOURS.gray[700],
-    lineHeight: 18,
+  boldUnderline: {
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
   },
 });

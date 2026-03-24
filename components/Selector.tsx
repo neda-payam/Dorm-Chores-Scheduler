@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 24,
-    paddingRight: 24,
+    paddingLeft: 20,
+    paddingRight: 20,
   },
   iconContainer: {
     width: 48,

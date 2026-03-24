@@ -1,6 +1,7 @@
 import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -30,6 +31,16 @@ export default function SignIn() {
     type: 'error' | 'success' | 'info' | 'warning' | 'tip';
     text: string;
   } | null>(null);
+
+  useEffect(() => {
+    const backAction = () => {
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, []);
 
   // Track keyboard visibility for KeyboardAvoidingView offset
   useEffect(() => {
@@ -65,24 +76,25 @@ export default function SignIn() {
 
   const handleAction = useCallback(async () => {
     clearErrors();
-    // Presence checks
+
     const emailRequired = validateRequired(email, 'Email address');
     if (!emailRequired.isValid) {
       setFieldError(emailRequired.error!);
       return;
     }
+
     const passwordRequired = validateRequired(password, 'Password');
     if (!passwordRequired.isValid) {
       setFieldError(passwordRequired.error!);
       return;
     }
 
-    // SQL injection checks
     const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
     if (!emailSqlCheck.isValid) {
       setFieldError(emailSqlCheck.error!);
       return;
     }
+
     const passwordSqlCheck = validateNoSqlInjection(password, 'Password');
     if (!passwordSqlCheck.isValid) {
       setFieldError(passwordSqlCheck.error!);
@@ -90,7 +102,8 @@ export default function SignIn() {
     }
 
     const normalisedEmail = normaliseEmail(email);
-    const { error } = await supabase.auth.signInWithPassword({
+
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: normalisedEmail,
       password,
     });
@@ -100,34 +113,48 @@ export default function SignIn() {
       return;
     }
 
+    const userId = data.user?.id;
+
+    if (!userId) {
+      setNotice({
+        type: 'error',
+        text: 'Unable to find signed in user.',
+      });
+      return;
+    }
+
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_manager')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) {
+      setNotice({
+        type: 'error',
+        text: profileError.message,
+      });
+      return;
+    }
+
     setNotice({
       type: 'success',
       text: 'Signed in successfully!',
     });
 
-    // TODO: Password reset will be on a separate page
-    // if (action === 'resetPassword') {
-    //   const emailRequired = validateRequired(email, 'Email address');
-    //   if (!emailRequired.isValid) {
-    //     setFieldError(emailRequired.error!);
-    //     return;
-    //   }
-    //   const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
-    //   if (!emailSqlCheck.isValid) {
-    //     setFieldError(emailSqlCheck.error!);
-    //     return;
-    //   }
-    //   const normalisedEmail = normaliseEmail(email);
-    //   const { error } = await supabase.auth.resetPasswordForEmail(normalisedEmail);
-    //   if (error) {
-    //     setNotice({ type: 'error', text: error.message });
-    //     return;
-    //   }
-    //   setNotice({
-    //     type: 'success',
-    //     text: 'Password reset email sent. Please check your inbox.',
-    //   });
-    // }
+    if (!profileData) {
+      setNotice({
+        type: 'error',
+        text: 'Unable to load user profile.',
+      });
+      return;
+    }
+
+    if (profileData.is_manager) {
+      router.push('/main/manager/dashboard');
+    } else {
+      router.push('/main/student/home');
+    }
   }, [email, password]);
 
   const scrollContent = (
@@ -212,7 +239,7 @@ export default function SignIn() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}

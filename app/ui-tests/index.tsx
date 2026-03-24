@@ -34,6 +34,27 @@ export default function UITestHub() {
           />
           <Spacer size="small" />
           <ListItem
+            title="Block Button Component"
+            subtitle="Test quick-action block button layouts and states"
+            iconName="th-large"
+            onPress={() => router.push('/ui-tests/block-button-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
+            title="Availability Badge Component"
+            subtitle="Test availability status dropdown and states"
+            iconName="toggle-on"
+            onPress={() => router.push('/ui-tests/availability-badge-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
+            title="Profile Picture Component"
+            subtitle="Test small nav avatar and large editable avatar"
+            iconName="user-circle"
+            onPress={() => router.push('/ui-tests/profile-picture-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
             title="List Item Component"
             subtitle="Test list item layouts and interactions"
             iconName="list"
@@ -66,6 +87,13 @@ export default function UITestHub() {
             subtitle="Test curved banner variants and responsive design"
             iconName="image"
             onPress={() => router.push('/ui-tests/curved-banner-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
+            title="NavBar Component"
+            subtitle="Test navigation bar layouts and active states"
+            iconName="grip-horizontal"
+            onPress={() => router.push('/ui-tests/navbar-test')}
           />
         </View>
 

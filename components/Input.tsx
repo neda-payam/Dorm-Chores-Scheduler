@@ -61,9 +61,15 @@ type InputState = 'default' | 'focus' | 'error';
 interface InputProps extends Omit<TextInputProps, 'style'> {
   hasError?: boolean;
   style?: ViewStyle;
+  hidePasswordToggle?: boolean;
 }
 
-export default function Input({ hasError = false, style, ...props }: InputProps) {
+export default function Input({
+  hasError = false,
+  style,
+  hidePasswordToggle,
+  ...props
+}: InputProps) {
   // Track focus state for border styling
   const [isFocused, setIsFocused] = useState(false);
   // Track password visibility toggle state
@@ -125,7 +131,7 @@ export default function Input({ hasError = false, style, ...props }: InputProps)
   // Determine if this is a password field based on secureTextEntry prop
   const isPasswordField = props.secureTextEntry;
   // Show toggle button only for password fields
-  const showPasswordToggle = isPasswordField;
+  const showPasswordToggle = isPasswordField && !hidePasswordToggle;
   // Check if input has value (for styling purposes)
   const hasValue = textValue && textValue.length > 0;
 
