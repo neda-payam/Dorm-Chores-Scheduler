@@ -24,25 +24,31 @@ const NAV_ITEMS: NavBarItem[] = [
     key: 'home',
     label: 'Home',
     iconName: 'home',
-    onPress: () => router.push('/main/manager/dashboard'),
+    onPress: () => router.push('/main/student/home'),
   },
   {
-    key: 'requests',
-    label: 'Requests',
-    iconName: 'wrench',
-    onPress: () => router.push('/main/manager/requests'),
+    key: 'chores',
+    label: 'Chores',
+    iconName: 'broom',
+    onPress: () => router.push('/main/student/chores'),
+  },
+  {
+    key: 'repairs',
+    label: 'Repairs',
+    iconName: 'tools',
+    onPress: () => router.push('/main/student/repairs'),
   },
   {
     key: 'dorms',
     label: 'Dorms',
-    iconName: 'building',
-    onPress: () => router.push('/main/manager/dorms'),
+    iconName: 'bed',
+    onPress: () => router.push('/main/student/dorms'),
   },
 ];
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function Dashboard() {
+export default function Dorms() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
 
@@ -166,7 +172,7 @@ export default function Dashboard() {
       {/* Static navbar */}
       <NavBar
         items={items as [NavBarItem, NavBarItem, ...NavBarItem[]]}
-        activeKey={'home'}
+        activeKey={'dorms'}
         style={styles.navBar}
       />
     </View>

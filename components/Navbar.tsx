@@ -2,7 +2,6 @@
  * @file NavBar.tsx
  * @description A bottom navigation bar with 2-4 icon-and-label tab buttons.
  *              Active tabs are non-interactable and rendered in the active colour.
- *              A 2 px gradient stripe sits above the 80 px bar body.
  *
  * @usage
  * ```tsx
@@ -26,7 +25,6 @@
  */
 
 import { FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { COLOURS } from '../constants/colours';
@@ -48,20 +46,10 @@ const ACTIVE_COLOUR = '#153000';
 const INACTIVE_COLOUR = '#868685';
 
 export default function NavBar({ items, activeKey, style }: NavBarProps) {
-  // Clamp to maximum of 4 items
   const visibleItems = items.slice(0, 4);
 
   return (
     <View style={[styles.wrapper, style]}>
-      {/* Gradient top border: transparent #666666 → opaque #868685 */}
-      <LinearGradient
-        colors={['rgba(102, 102, 102, 0)', 'rgba(134, 134, 133, 0.5)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.topBorder}
-      />
-
-      {/* Tab button row */}
       <View style={styles.barBody}>
         {visibleItems.map((item) => {
           const isActive = item.key === activeKey;
@@ -92,10 +80,6 @@ const styles = StyleSheet.create({
   wrapper: {
     width: '100%',
     backgroundColor: COLOURS.white,
-  },
-  topBorder: {
-    height: 2,
-    width: '100%',
   },
   barBody: {
     height: 80,

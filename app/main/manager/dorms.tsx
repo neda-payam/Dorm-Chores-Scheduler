@@ -42,7 +42,7 @@ const NAV_ITEMS: NavBarItem[] = [
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function Dashboard() {
+export default function Dorms() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
 
@@ -166,7 +166,7 @@ export default function Dashboard() {
       {/* Static navbar */}
       <NavBar
         items={items as [NavBarItem, NavBarItem, ...NavBarItem[]]}
-        activeKey={'home'}
+        activeKey={'dorms'}
         style={styles.navBar}
       />
     </View>
