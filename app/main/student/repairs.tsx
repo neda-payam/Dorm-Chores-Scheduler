@@ -11,13 +11,24 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import { FontAwesome5 } from '@expo/vector-icons';
+import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import FilterChip from '../../../components/FilterChip';
+import InlineButton from '../../../components/InlineButton';
+import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import SortDropdown from '../../../components/SortDropdown';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+
+const FILTER_OPTIONS = ['All', 'Mine', 'Completed'];
+const SORT_OPTIONS = ['Due Date'];
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -46,11 +57,28 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
+const REPAIR_REQUESTS = [
+  {
+    id: '1',
+    title: 'Fix broken sink',
+    iconName: 'faucet',
+    subtitle: 'Created by You - 20/02/2026',
+  },
+  {
+    id: '2',
+    title: 'Repair door lock',
+    iconName: 'door-closed',
+    subtitle: 'Created by Person 2 - 18/02/2026',
+  },
+];
+
 const GRADIENT_THRESHOLD = 24;
 
 export default function Repairs() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('Due Date');
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -102,6 +130,8 @@ export default function Repairs() {
     ...item,
   }));
 
+  const isEmpty = REPAIR_REQUESTS.length === 0;
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
@@ -147,9 +177,79 @@ export default function Repairs() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Text style={styles.title}>Repair requests</Text>
+
+            {isEmpty ? (
+              <>
+                <Spacer size="large" />
+
+                <View style={styles.noneFound}>
+                  <View style={styles.iconWrapper}>
+                    <FontAwesome5 name="wrench" size={40} color={COLOURS.black} />
+                  </View>
+
+                  <Text style={styles.noneFoundTitle}>No repairs found</Text>
+
+                  <Text style={styles.noneFoundSubtitle}>
+                    Something need repaired?{' '}
+                    <InlineButton
+                      title="Request repair"
+                      onPress={() => router.push('/main/student/request-repair')}
+                    />
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Spacer size="medium" />
+
+                <View style={styles.chipRow}>
+                  {FILTER_OPTIONS.map((option) => (
+                    <FilterChip
+                      key={option}
+                      label={option}
+                      active={activeFilter === option}
+                      onPress={() => setActiveFilter(option)}
+                    />
+                  ))}
+                </View>
+
+                <Spacer size="small" />
+
+                <View style={styles.chipRow}>
+                  <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                </View>
+
+                <Spacer size="medium" />
+
+                {REPAIR_REQUESTS.map((request, index) => (
+                  <View key={request.id}>
+                    <ListItem
+                      title={request.title}
+                      iconName={request.iconName}
+                      subtitle={request.subtitle}
+                      onPress={() => router.push(`/main/student/repairs/${request.id}`)}
+                    />
+
+                    {index < REPAIR_REQUESTS.length - 1 && <Spacer size="small" />}
+                  </View>
+                ))}
+              </>
+            )}
+
+            <Spacer size="large" />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <View style={styles.actionButtonWrapper}>
+        <ActionPillButton
+          title="New Request"
+          iconName="plus"
+          onPress={() => router.push('/main/student/request-repair')}
+        />
+      </View>
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -212,6 +312,11 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
+  title: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: COLOURS.black,
+  },
   heading: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
@@ -227,6 +332,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLOURS.gray[700],
     lineHeight: 24,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  actionButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 112,
+    zIndex: 4,
   },
   navGradientWrapper: {
     position: 'absolute',
@@ -251,5 +367,30 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  noneFound: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noneFoundTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  noneFoundSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
   },
 });

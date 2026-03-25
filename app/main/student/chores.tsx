@@ -16,12 +16,12 @@ import {
 } from 'react-native';
 
 import { FontAwesome5 } from '@expo/vector-icons';
+import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
 import FilterChip from '../../../components/FilterChip';
 import InlineButton from '../../../components/InlineButton';
 import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
-import ActionPillButton from '../../../components/ActionPillButton';
 import ProfilePicture from '../../../components/ProfilePicture';
 import SortDropdown from '../../../components/SortDropdown';
 import Spacer from '../../../components/Spacer';
@@ -412,14 +412,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-
   iconWrapper: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   completedTitle: {
     marginTop: 8,
     fontFamily: 'Inter-Bold',
@@ -427,7 +425,6 @@ const styles = StyleSheet.create({
     color: COLOURS.black,
     textAlign: 'center',
   },
-
   completedSubtitle: {
     fontFamily: 'Inter',
     fontSize: 14,
