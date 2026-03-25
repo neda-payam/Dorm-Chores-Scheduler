@@ -41,6 +41,13 @@ export default function UITestHub() {
           />
           <Spacer size="small" />
           <ListItem
+            title="Filter Chip & Sort Dropdown"
+            subtitle="Test filter chips and sort dropdown variants"
+            iconName="filter"
+            onPress={() => router.push('/ui-tests/filter-chip-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
             title="Availability Badge Component"
             subtitle="Test availability status dropdown and states"
             iconName="toggle-on"
