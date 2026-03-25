@@ -11,13 +11,24 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import { FontAwesome5 } from '@expo/vector-icons';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import FilterChip from '../../../components/FilterChip';
+import InlineButton from '../../../components/InlineButton';
+import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
+import ActionPillButton from '../../../components/ActionPillButton';
 import ProfilePicture from '../../../components/ProfilePicture';
+import SortDropdown from '../../../components/SortDropdown';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+
+const FILTER_OPTIONS = ['All', 'Mine', 'Recurring', 'Completed'];
+const SORT_OPTIONS = ['Due Date', 'Alphabetical', 'Date Created'];
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -46,11 +57,56 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
+const CHORES = [
+  {
+    id: '1',
+    title: 'Take out the bins',
+    iconName: 'trash',
+    subtitle: 'You - Due 1 hour ago',
+    overdue: true,
+    inProgress: false,
+  },
+  {
+    id: '2',
+    title: 'Clean the common room',
+    iconName: 'broom',
+    subtitle: 'You - Due in 3 days',
+    overdue: false,
+    inProgress: true,
+  },
+  {
+    id: '3',
+    title: 'Tidy the hallway',
+    iconName: 'house-user',
+    subtitle: 'Person 2 - Due 6 years ago',
+    overdue: true,
+    inProgress: false,
+  },
+  {
+    id: '4',
+    title: 'Mop the kitchen',
+    iconName: 'broom',
+    subtitle: 'Person 2 - Due in 6 days',
+    overdue: false,
+    inProgress: true,
+  },
+  {
+    id: '5',
+    title: 'Clean the bathrooms',
+    iconName: 'toilet',
+    subtitle: 'Person 3 - Due in 1 week',
+    overdue: false,
+    inProgress: false,
+  },
+];
+
 const GRADIENT_THRESHOLD = 24;
 
 export default function Chores() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('Due Date');
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -102,6 +158,8 @@ export default function Chores() {
     ...item,
   }));
 
+  const isEmpty = CHORES.length === 0;
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
@@ -147,9 +205,89 @@ export default function Chores() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Text style={styles.title}>Chores</Text>
+
+            {isEmpty ? (
+              <>
+                <Spacer size="large" />
+
+                <View style={styles.completed}>
+                  <View style={styles.iconWrapper}>
+                    <FontAwesome5 name="check" size={40} color={COLOURS.black} />
+                  </View>
+
+                  <Text style={styles.completedTitle}>All chores complete</Text>
+
+                  <Text style={styles.completedSubtitle}>
+                    Something need doing?{' '}
+                    <InlineButton
+                      title="Create new chore"
+                      onPress={() => router.push('/main/student/create-chore')}
+                    />
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Spacer size="medium" />
+
+                <View style={styles.chipRow}>
+                  {FILTER_OPTIONS.map((option) => (
+                    <FilterChip
+                      key={option}
+                      label={option}
+                      active={activeFilter === option}
+                      onPress={() => setActiveFilter(option)}
+                    />
+                  ))}
+                </View>
+
+                <Spacer size="small" />
+
+                <View style={styles.chipRow}>
+                  <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                </View>
+
+                <Spacer size="medium" />
+
+                {CHORES.map((chore, index) => (
+                  <View key={chore.id}>
+                    <ListItem
+                      title={chore.title}
+                      iconName={chore.iconName}
+                      subtitle={`${chore.subtitle}${chore.inProgress ? ' - In Progress' : ''}`}
+                      onPress={() => router.push(`/main/student/chore/${chore.id}`)}
+                      statusChip={
+                        chore.overdue
+                          ? {
+                              label: 'Overdue',
+                              backgroundColor: '#FFE9EA',
+                              textColor: '#B70000',
+                            }
+                          : undefined
+                      }
+                    />
+
+                    {/* Spacer between items (not after last) */}
+                    {index < CHORES.length - 1 && <Spacer size="small" />}
+                  </View>
+                ))}
+              </>
+            )}
+
+            <Spacer size="large" />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <View style={styles.newChoreButtonWrapper}>
+        <ActionPillButton
+          title="New Chore"
+          iconName="plus"
+          onPress={() => router.push('/main/student/create-chore')}
+        />
+      </View>
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -251,5 +389,49 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  title: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: COLOURS.black,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  newChoreButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 112,
+    zIndex: 4,
+  },
+  completed: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  completedTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+
+  completedSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
   },
 });
