@@ -11,12 +11,16 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import DormCard from '../../../components/DormCard';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
 
 const NAV_ITEMS: NavBarItem[] = [
@@ -47,6 +51,29 @@ const NAV_ITEMS: NavBarItem[] = [
 ];
 
 const GRADIENT_THRESHOLD = 24;
+
+const CURRENT_DORM = {
+  title: 'Building / Apartment Name',
+  subtitle: 'Created by Name - 20/02/2026',
+  stats: [
+    { value: 5, label: 'Members' },
+    { value: 12, label: 'Chores' },
+    { value: 1, label: 'Repairs' },
+  ],
+};
+
+const OTHER_DORMS = [
+  {
+    id: '1',
+    title: 'Building / Apartment Name',
+    subtitle: 'Created by Name - 20/02/2026',
+    stats: [
+      { value: 2, label: 'Members' },
+      { value: 53, label: 'Chores' },
+      { value: 5, label: 'Repairs' },
+    ],
+  },
+];
 
 export default function Dorms() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -147,9 +174,58 @@ export default function Dorms() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Text style={styles.title}>Current dorm</Text>
+            <View style={styles.cardSpacing}>
+              <DormCard
+                title={CURRENT_DORM.title}
+                subtitle={CURRENT_DORM.subtitle}
+                stats={CURRENT_DORM.stats}
+                primaryAction={{
+                  label: 'Edit dorm',
+                  onPress: () => router.push('/main/student/edit-dorm'),
+                  variant: 'secondary',
+                }}
+              />
+            </View>
+
+            <View style={styles.sectionSpacing}>
+              <Text style={styles.title}>Other dorm(s)</Text>
+            </View>
+
+            <View style={styles.cardSpacing}>
+              {OTHER_DORMS.map((dorm, index) => (
+                <View key={dorm.id}>
+                  <DormCard
+                    title={dorm.title}
+                    subtitle={dorm.subtitle}
+                    stats={dorm.stats}
+                    primaryAction={{
+                      label: 'Edit dorm',
+                      onPress: () => router.push('/main/student/edit-dorm'),
+                      variant: 'secondary',
+                    }}
+                    secondaryAction={{
+                      label: 'Switch dorm',
+                      onPress: () => router.push('/main/student/dorms/switch'),
+                      variant: 'primary',
+                    }}
+                  />
+                  {index < OTHER_DORMS.length - 1 ? <Spacer size="small" /> : null}
+                </View>
+              ))}
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <View style={styles.newDormButtonWrapper}>
+        <ActionPillButton
+          title="New Dorm"
+          iconName="plus"
+          onPress={() => router.push('/main/student/create-dorm')}
+        />
+      </View>
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -211,6 +287,23 @@ const styles = StyleSheet.create({
   },
   content: {
     marginHorizontal: 20,
+  },
+  title: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: COLOURS.black,
+  },
+  sectionSpacing: {
+    marginTop: 12,
+  },
+  cardSpacing: {
+    marginTop: 12,
+  },
+  newDormButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 112,
+    zIndex: 4,
   },
   heading: {
     fontFamily: 'Inter-Bold',
