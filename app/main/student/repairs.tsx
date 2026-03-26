@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { FontAwesome5 } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
 import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
 import FilterChip from '../../../components/FilterChip';
@@ -86,6 +87,8 @@ export default function Repairs() {
   const [isAvailable, setIsAvailable] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
   const [sortBy, setSortBy] = useState('Due Date');
+  const isConnected = true; // Defines whether the user is connected to a manager (i.e. has access to repair requests) or not. Set to false to show the "not connected" state.
+  const qrValue = 'dorm-chores-scheduler:manager-connect:sample';
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -185,78 +188,100 @@ export default function Repairs() {
           }}
         >
           <View style={styles.content}>
-            <Text style={styles.title}>Repair requests</Text>
-
-            {isEmpty ? (
+            {isConnected ? (
               <>
+                <Text style={styles.title}>Repair requests</Text>
+
+                {isEmpty ? (
+                  <>
+                    <Spacer size="large" />
+
+                    <View style={styles.noneFound}>
+                      <View style={styles.iconWrapper}>
+                        <FontAwesome5 name="wrench" size={40} color={COLOURS.black} />
+                      </View>
+
+                      <Text style={styles.noneFoundTitle}>No repairs found</Text>
+
+                      <Text style={styles.noneFoundSubtitle}>
+                        Something need repaired?{' '}
+                        <InlineButton
+                          title="Request repair"
+                          onPress={() => router.push('/main/student/request-repair')}
+                        />
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Spacer size="medium" />
+
+                    <View style={styles.chipRow}>
+                      {FILTER_OPTIONS.map((option) => (
+                        <FilterChip
+                          key={option}
+                          label={option}
+                          active={activeFilter === option}
+                          onPress={() => setActiveFilter(option)}
+                        />
+                      ))}
+                    </View>
+
+                    <Spacer size="small" />
+
+                    <View style={styles.chipRow}>
+                      <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                    </View>
+
+                    <Spacer size="medium" />
+
+                    {REPAIR_REQUESTS.map((request, index) => (
+                      <View key={request.id}>
+                        <ListItem
+                          title={request.title}
+                          iconName={request.iconName}
+                          subtitle={request.subtitle}
+                          onPress={() => router.push(`/main/student/repairs/${request.id}`)}
+                        />
+
+                        {index < REPAIR_REQUESTS.length - 1 && <Spacer size="small" />}
+                      </View>
+                    ))}
+                  </>
+                )}
+
                 <Spacer size="large" />
-
-                <View style={styles.noneFound}>
-                  <View style={styles.iconWrapper}>
-                    <FontAwesome5 name="wrench" size={40} color={COLOURS.black} />
-                  </View>
-
-                  <Text style={styles.noneFoundTitle}>No repairs found</Text>
-
-                  <Text style={styles.noneFoundSubtitle}>
-                    Something need repaired?{' '}
-                    <InlineButton
-                      title="Request repair"
-                      onPress={() => router.push('/main/student/request-repair')}
-                    />
-                  </Text>
-                </View>
               </>
             ) : (
-              <>
-                <Spacer size="medium" />
-
-                <View style={styles.chipRow}>
-                  {FILTER_OPTIONS.map((option) => (
-                    <FilterChip
-                      key={option}
-                      label={option}
-                      active={activeFilter === option}
-                      onPress={() => setActiveFilter(option)}
-                    />
-                  ))}
+              <View style={styles.notConnected}>
+                <Spacer size="large" />
+                <View style={styles.qrCode}>
+                  <QRCode value={qrValue} size={300} />
                 </View>
-
-                <Spacer size="small" />
-
-                <View style={styles.chipRow}>
-                  <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                <Spacer size="large" />
+                <View style={styles.qrIconWrapper}>
+                  <FontAwesome5 name="wrench" size={28} color={COLOURS.black} />
                 </View>
-
-                <Spacer size="medium" />
-
-                {REPAIR_REQUESTS.map((request, index) => (
-                  <View key={request.id}>
-                    <ListItem
-                      title={request.title}
-                      iconName={request.iconName}
-                      subtitle={request.subtitle}
-                      onPress={() => router.push(`/main/student/repairs/${request.id}`)}
-                    />
-
-                    {index < REPAIR_REQUESTS.length - 1 && <Spacer size="small" />}
-                  </View>
-                ))}
-              </>
+                <Text style={styles.notConnectedTitle}>Not connected</Text>
+                <Text style={styles.notConnectedSubtitle}>
+                  To begin sending repair requests, your building manager must scan the above QR
+                  code.
+                </Text>
+              </View>
             )}
-
-            <Spacer size="large" />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.actionButtonWrapper}>
-        <ActionPillButton
-          title="New Request"
-          iconName="plus"
-          onPress={() => router.push('/main/student/request-repair')}
-        />
-      </View>
+      {isConnected && (
+        <View style={styles.actionButtonWrapper}>
+          <ActionPillButton
+            title="New Request"
+            iconName="plus"
+            onPress={() => router.push('/main/student/request-repair')}
+          />
+        </View>
+      )}
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -395,6 +420,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   noneFoundSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
+  },
+  notConnected: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  qrCode: {
+    width: 300,
+    height: 300,
+    backgroundColor: COLOURS.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrIconWrapper: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notConnectedTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  notConnectedSubtitle: {
     fontFamily: 'Inter',
     fontSize: 14,
     color: COLOURS.gray[700],
