@@ -11,12 +11,19 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import type { FontAwesome5 } from '@expo/vector-icons';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import BlockButton from '../../../components/BlockButton';
+import InlineButton from '../../../components/InlineButton';
+import InlineNotification from '../../../components/InlineNotification';
+import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
 
 const NAV_ITEMS: NavBarItem[] = [
@@ -47,6 +54,60 @@ const NAV_ITEMS: NavBarItem[] = [
 ];
 
 const GRADIENT_THRESHOLD = 24;
+
+type IconName = keyof typeof FontAwesome5.glyphMap;
+
+const TODAY_TASKS = [
+  {
+    id: '1',
+    title: 'Take out the bins',
+    subtitle: 'You - Due 1 hour ago',
+    iconName: 'trash' as IconName,
+    overdue: true,
+  },
+  {
+    id: '2',
+    title: 'Tidy the corridor',
+    subtitle: 'You - Due in 1 hour',
+    iconName: 'house-user' as IconName,
+    overdue: false,
+  },
+  {
+    id: '3',
+    title: 'Clean the kitchen area',
+    subtitle: 'Person 2 - Due 6 years ago',
+    iconName: 'utensils' as IconName,
+    overdue: true,
+  },
+  {
+    id: '4',
+    title: 'Mop the floor',
+    subtitle: 'Person 3 - Due in 5 hours',
+    iconName: 'broom' as IconName,
+    overdue: false,
+  },
+  {
+    id: '5',
+    title: 'Hoover the floors',
+    subtitle: 'Person 4 - Due in 8 hours',
+    iconName: 'wind' as IconName,
+    overdue: false,
+  },
+];
+
+const OPEN_REPAIRS = [
+  {
+    id: '1',
+    title: 'Fix broken sink',
+    subtitle: 'Created by Person 2 - 20/02/2026',
+    iconName: 'faucet' as IconName,
+    status: {
+      label: 'In Progress',
+      backgroundColor: '#FFF7D3',
+      textColor: 'rgba(0, 0, 0, 0.65)',
+    },
+  },
+];
 
 export default function Home() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -147,7 +208,110 @@ export default function Home() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Today</Text>
+              <InlineNotification
+                type="info"
+                text="Showing top 5 due tasks"
+                style={styles.inlineNotification}
+              />
+            </View>
+
+            <Spacer size="medium" />
+
+            <View>
+              {TODAY_TASKS.map((task, index) => (
+                <View key={task.id}>
+                  <ListItem
+                    title={task.title}
+                    subtitle={task.subtitle}
+                    iconName={task.iconName}
+                    onPress={() => router.push(`/main/student/chore/${task.id}`)}
+                    statusChip={
+                      task.overdue
+                        ? {
+                            label: 'Overdue',
+                            backgroundColor: '#FFE9EA',
+                            textColor: '#B70000',
+                          }
+                        : undefined
+                    }
+                  />
+                  {index < TODAY_TASKS.length - 1 ? <Spacer size="small" /> : null}
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.inlineAction}>
+              <InlineButton
+                title="View all chores"
+                onPress={() => router.push('/main/student/chores')}
+              />
+            </View>
+
+            <Spacer size="large" />
+
+            <Text style={styles.title}>This week</Text>
+            <Spacer size="small" />
+            <Text style={styles.placeholderText}>
+              This week summary components are coming soon.
+            </Text>
+
+            <Spacer size="large" />
+
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Open repairs</Text>
+              <InlineNotification
+                type="info"
+                text="Showing max 3"
+                style={styles.inlineNotification}
+              />
+            </View>
+
+            <Spacer size="medium" />
+
+            <View>
+              {OPEN_REPAIRS.map((repair, index) => (
+                <View key={repair.id}>
+                  <ListItem
+                    title={repair.title}
+                    subtitle={repair.subtitle}
+                    iconName={repair.iconName}
+                    onPress={() => router.push(`/main/student/repairs/${repair.id}`)}
+                    statusChip={repair.status}
+                  />
+                  {index < OPEN_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.inlineAction}>
+              <InlineButton
+                title="View all repairs"
+                onPress={() => router.push('/main/student/repairs')}
+              />
+            </View>
+
+            <Spacer size="large" />
+
+            <Text style={styles.title}>Quick actions</Text>
+            <Spacer size="small" />
+            <View style={styles.quickActionsRow}>
+              <BlockButton
+                title="Create Chore"
+                iconName="plus"
+                onPress={() => router.push('/main/student/create-chore')}
+              />
+              <BlockButton
+                title="Request Repair"
+                iconName="wrench"
+                onPress={() => router.push('/main/student/request-repair')}
+              />
+            </View>
+
+            <Spacer size="large" />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -212,21 +376,32 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
-  heading: {
+  title: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
     color: COLOURS.black,
   },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    color: COLOURS.black,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  body: {
+  inlineNotification: {
+    flexShrink: 1,
+    flexGrow: 0,
+  },
+  inlineAction: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  placeholderText: {
     fontFamily: 'Inter',
-    fontSize: 16,
+    fontSize: 14,
     color: COLOURS.gray[700],
-    lineHeight: 24,
   },
   navGradientWrapper: {
     position: 'absolute',

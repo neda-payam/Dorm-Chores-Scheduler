@@ -64,7 +64,6 @@ const CHORES = [
     iconName: 'trash',
     subtitle: 'You - Due 1 hour ago',
     overdue: true,
-    inProgress: false,
   },
   {
     id: '2',
@@ -72,7 +71,6 @@ const CHORES = [
     iconName: 'broom',
     subtitle: 'You - Due in 3 days',
     overdue: false,
-    inProgress: true,
   },
   {
     id: '3',
@@ -80,7 +78,6 @@ const CHORES = [
     iconName: 'house-user',
     subtitle: 'Person 2 - Due 6 years ago',
     overdue: true,
-    inProgress: false,
   },
   {
     id: '4',
@@ -88,7 +85,6 @@ const CHORES = [
     iconName: 'broom',
     subtitle: 'Person 2 - Due in 6 days',
     overdue: false,
-    inProgress: true,
   },
   {
     id: '5',
@@ -96,7 +92,6 @@ const CHORES = [
     iconName: 'toilet',
     subtitle: 'Person 3 - Due in 1 week',
     overdue: false,
-    inProgress: false,
   },
 ];
 
@@ -256,7 +251,7 @@ export default function Chores() {
                     <ListItem
                       title={chore.title}
                       iconName={chore.iconName}
-                      subtitle={`${chore.subtitle}${chore.inProgress ? ' - In Progress' : ''}`}
+                      subtitle={chore.subtitle}
                       onPress={() => router.push(`/main/student/chore/${chore.id}`)}
                       statusChip={
                         chore.overdue

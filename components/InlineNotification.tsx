@@ -158,8 +158,7 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     paddingTop: 5,
     paddingBottom: 5,
-    paddingRight: 5,
-    width: '100%',
+    paddingRight: 8,
     borderRadius: 8,
   },
   iconContainer: {
@@ -177,6 +176,7 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: 'Inter',
     fontSize: 12,
-    flex: 1,
+    flexShrink: 1,
+    flexGrow: 0,
   },
 });
