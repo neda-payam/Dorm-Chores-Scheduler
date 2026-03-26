@@ -30,13 +30,7 @@ interface InfoPanelProps {
 
 const BACKGROUND_COLOUR = '#F1F1ED';
 
-export default function InfoPanel({
-  label,
-  value,
-  style,
-  labelStyle,
-  valueStyle,
-}: InfoPanelProps) {
+export default function InfoPanel({ label, value, style, labelStyle, valueStyle }: InfoPanelProps) {
   return (
     <View style={[styles.panel, style]}>
       <Text style={[styles.label, labelStyle]}>{label}</Text>
