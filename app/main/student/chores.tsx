@@ -57,7 +57,15 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
-const CHORES = [
+type ChoreSummary = {
+  id: string;
+  title: string;
+  iconName: keyof typeof FontAwesome5.glyphMap;
+  subtitle: string;
+  overdue: boolean;
+};
+
+const CHORES: ChoreSummary[] = [
   {
     id: '1',
     title: 'Take out the bins',

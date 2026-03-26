@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 
-import type { FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
 import BlockButton from '../../../components/BlockButton';
 import InlineButton from '../../../components/InlineButton';
@@ -57,7 +57,13 @@ const GRADIENT_THRESHOLD = 24;
 
 type IconName = keyof typeof FontAwesome5.glyphMap;
 
-const TODAY_TASKS = [
+const TODAY_TASKS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: IconName;
+  overdue: boolean;
+}[] = [
   {
     id: '1',
     title: 'Take out the bins',
@@ -95,7 +101,17 @@ const TODAY_TASKS = [
   },
 ];
 
-const OPEN_REPAIRS = [
+const OPEN_REPAIRS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: IconName;
+  status?: {
+    label: string;
+    backgroundColor: string;
+    textColor: string;
+  };
+}[] = [
   {
     id: '1',
     title: 'Fix broken sink',
@@ -163,6 +179,9 @@ export default function Home() {
     ...item,
   }));
 
+  const noChores = TODAY_TASKS.length === 0;
+  const noRepairs = OPEN_REPAIRS.length === 0;
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
@@ -220,30 +239,46 @@ export default function Home() {
 
             <Spacer size="medium" />
 
-            <View>
-              {TODAY_TASKS.map((task, index) => (
-                <View key={task.id}>
-                  <ListItem
-                    title={task.title}
-                    subtitle={task.subtitle}
-                    iconName={task.iconName}
-                    onPress={() => router.push(`/main/student/chore/${task.id}`)}
-                    statusChip={
-                      task.overdue
-                        ? {
-                            label: 'Overdue',
-                            backgroundColor: '#FFE9EA',
-                            textColor: '#B70000',
-                          }
-                        : undefined
-                    }
-                  />
-                  {index < TODAY_TASKS.length - 1 ? <Spacer size="small" /> : null}
+            {noChores ? (
+              <View style={styles.emptyCard}>
+                <View style={styles.emptyIconWrapper}>
+                  <FontAwesome5 name="check" size={40} color={COLOURS.black} />
                 </View>
-              ))}
-            </View>
+                <Text style={styles.emptyTitle}>All chores complete</Text>
+                <Text style={styles.emptySubtitle}>
+                  Something need doing?{' '}
+                  <InlineButton
+                    title="Create new chore"
+                    onPress={() => router.push('/main/student/create-chore')}
+                  />
+                </Text>
+              </View>
+            ) : (
+              <View>
+                {TODAY_TASKS.map((task, index) => (
+                  <View key={task.id}>
+                    <ListItem
+                      title={task.title}
+                      subtitle={task.subtitle}
+                      iconName={task.iconName}
+                      onPress={() => router.push(`/main/student/chore/${task.id}`)}
+                      statusChip={
+                        task.overdue
+                          ? {
+                              label: 'Overdue',
+                              backgroundColor: '#FFE9EA',
+                              textColor: '#B70000',
+                            }
+                          : undefined
+                      }
+                    />
+                    {index < TODAY_TASKS.length - 1 ? <Spacer size="small" /> : null}
+                  </View>
+                ))}
+              </View>
+            )}
 
-            <View style={styles.inlineAction}>
+            <View style={[styles.inlineAction, styles.inlineActionLarge]}>
               <InlineButton
                 title="View all chores"
                 onPress={() => router.push('/main/student/chores')}
@@ -271,22 +306,35 @@ export default function Home() {
 
             <Spacer size="medium" />
 
-            <View>
-              {OPEN_REPAIRS.map((repair, index) => (
-                <View key={repair.id}>
-                  <ListItem
-                    title={repair.title}
-                    subtitle={repair.subtitle}
-                    iconName={repair.iconName}
-                    onPress={() => router.push(`/main/student/repairs/${repair.id}`)}
-                    statusChip={repair.status}
+            {noRepairs ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyTitle}>No repairs found</Text>
+                <Text style={styles.emptySubtitle}>
+                  Something need repaired?{' '}
+                  <InlineButton
+                    title="Request repair"
+                    onPress={() => router.push('/main/student/request-repair')}
                   />
-                  {index < OPEN_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
-                </View>
-              ))}
-            </View>
+                </Text>
+              </View>
+            ) : (
+              <View>
+                {OPEN_REPAIRS.map((repair, index) => (
+                  <View key={repair.id}>
+                    <ListItem
+                      title={repair.title}
+                      subtitle={repair.subtitle}
+                      iconName={repair.iconName}
+                      onPress={() => router.push(`/main/student/repairs/${repair.id}`)}
+                      statusChip={repair.status}
+                    />
+                    {index < OPEN_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
+                  </View>
+                ))}
+              </View>
+            )}
 
-            <View style={styles.inlineAction}>
+            <View style={[styles.inlineAction, styles.inlineActionLarge]}>
               <InlineButton
                 title="View all repairs"
                 onPress={() => router.push('/main/student/repairs')}
@@ -394,6 +442,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignItems: 'center',
   },
+  inlineActionLarge: {
+    marginTop: 16,
+  },
   quickActionsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -402,6 +453,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 14,
     color: COLOURS.gray[700],
+  },
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyIconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
   },
   navGradientWrapper: {
     position: 'absolute',

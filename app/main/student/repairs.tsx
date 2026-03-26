@@ -57,7 +57,14 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
-const REPAIR_REQUESTS = [
+type RepairSummary = {
+  id: string;
+  title: string;
+  iconName: keyof typeof FontAwesome5.glyphMap;
+  subtitle: string;
+};
+
+const REPAIR_REQUESTS: RepairSummary[] = [
   {
     id: '1',
     title: 'Fix broken sink',

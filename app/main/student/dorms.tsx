@@ -60,6 +60,8 @@ type DormSummary = {
   stats: { value: number; label: string }[];
 };
 
+type DormListItem = DormSummary & { id: string };
+
 // When both are empty, it will show the no dorms found screen.
 // TODO: Find a way to mandate one always active, if not make the user create / join one.
 const CURRENT_DORM: DormSummary | null = {
@@ -74,7 +76,7 @@ const CURRENT_DORM: DormSummary | null = {
 
 // const CURRENT_DORM: DormSummary | null = null;
 
-const OTHER_DORMS: (DormSummary & { id: string })[] = [
+const OTHER_DORMS: DormListItem[] = [
   {
     id: '1',
     title: 'Building / Apartment Name',
