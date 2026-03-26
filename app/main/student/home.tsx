@@ -20,6 +20,7 @@ import AvailabilityBadge from '../../../components/AvailabilityBadge';
 import BlockButton from '../../../components/BlockButton';
 import InlineButton from '../../../components/InlineButton';
 import InlineNotification from '../../../components/InlineNotification';
+import InfoPanel from '../../../components/InfoPanel';
 import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
@@ -289,9 +290,12 @@ export default function Home() {
 
             <Text style={styles.title}>This week</Text>
             <Spacer size="small" />
-            <Text style={styles.placeholderText}>
-              This week summary components are coming soon.
-            </Text>
+            <View style={styles.infoPanelGrid}>
+              <InfoPanel label="Total chores" value="12" />
+              <InfoPanel label="Completed" value="85%" />
+              <InfoPanel label="Overdue" value="2" />
+              <InfoPanel label="Open repairs" value="1" />
+            </View>
 
             <Spacer size="large" />
 
@@ -449,10 +453,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  placeholderText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: COLOURS.gray[700],
+  infoPanelGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   emptyCard: {
     alignItems: 'center',

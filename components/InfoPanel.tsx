@@ -49,10 +49,12 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   label: {
+    fontFamily: 'Inter',
     fontSize: 15,
     color: '#000000',
   },
   value: {
+    fontFamily: 'Inter-Bold',
     fontSize: 41,
     color: '#000000',
     lineHeight: 46,
