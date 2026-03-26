@@ -12,9 +12,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
+import { FontAwesome5 } from '@expo/vector-icons';
 import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
 import DormCard from '../../../components/DormCard';
@@ -52,7 +54,15 @@ const NAV_ITEMS: NavBarItem[] = [
 
 const GRADIENT_THRESHOLD = 24;
 
-const CURRENT_DORM = {
+type DormSummary = {
+  title: string;
+  subtitle: string;
+  stats: { value: number; label: string }[];
+};
+
+// When both are empty, it will show the no dorms found screen.
+// TODO: Find a way to mandate one always active, if not make the user create / join one.
+const CURRENT_DORM: DormSummary | null = {
   title: 'Building / Apartment Name',
   subtitle: 'Created by Name - 20/02/2026',
   stats: [
@@ -62,7 +72,9 @@ const CURRENT_DORM = {
   ],
 };
 
-const OTHER_DORMS = [
+// const CURRENT_DORM: DormSummary | null = null;
+
+const OTHER_DORMS: (DormSummary & { id: string })[] = [
   {
     id: '1',
     title: 'Building / Apartment Name',
@@ -75,9 +87,13 @@ const OTHER_DORMS = [
   },
 ];
 
+// const OTHER_DORMS: (DormSummary & { id: string })[] = [];
+
 export default function Dorms() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [isJoinPressed, setIsJoinPressed] = useState(false);
+  const [isCreatePressed, setIsCreatePressed] = useState(false);
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -129,6 +145,8 @@ export default function Dorms() {
     ...item,
   }));
 
+  const isEmpty = !CURRENT_DORM && OTHER_DORMS.length === 0;
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
@@ -176,56 +194,120 @@ export default function Dorms() {
         >
           <View style={styles.content}>
             <Text style={styles.title}>Current dorm</Text>
-            <View style={styles.cardSpacing}>
-              <DormCard
-                title={CURRENT_DORM.title}
-                subtitle={CURRENT_DORM.subtitle}
-                stats={CURRENT_DORM.stats}
-                primaryAction={{
-                  label: 'Edit dorm',
-                  onPress: () => router.push('/main/student/edit-dorm'),
-                  variant: 'secondary',
-                }}
-              />
-            </View>
 
-            <View style={styles.sectionSpacing}>
-              <Text style={styles.title}>Other dorm(s)</Text>
-            </View>
+            {isEmpty ? (
+              <>
+                <Spacer size="large" />
 
-            <View style={styles.cardSpacing}>
-              {OTHER_DORMS.map((dorm, index) => (
-                <View key={dorm.id}>
-                  <DormCard
-                    title={dorm.title}
-                    subtitle={dorm.subtitle}
-                    stats={dorm.stats}
-                    primaryAction={{
-                      label: 'Edit dorm',
-                      onPress: () => router.push('/main/student/edit-dorm'),
-                      variant: 'secondary',
-                    }}
-                    secondaryAction={{
-                      label: 'Switch dorm',
-                      onPress: () => router.push('/main/student/dorms/switch'),
-                      variant: 'primary',
-                    }}
-                  />
-                  {index < OTHER_DORMS.length - 1 ? <Spacer size="small" /> : null}
+                <View style={styles.noneFound}>
+                  <View style={styles.iconWrapper}>
+                    <FontAwesome5 name="bed" size={40} color={COLOURS.black} />
+                  </View>
+
+                  <Text style={styles.noneFoundTitle}>No dorms found</Text>
+
+                  <Text style={styles.noneFoundSubtitle}>
+                    You will need to join a dorm or create one to get started with{' '}
+                    <Text style={styles.noneFoundBold}>Dorm Chores Scheduler</Text>.
+                  </Text>
                 </View>
-              ))}
-            </View>
+              </>
+            ) : (
+              <>
+                {CURRENT_DORM ? (
+                  <View style={styles.table}>
+                    <View style={styles.tableRow}>
+                      <DormCard
+                        title={CURRENT_DORM.title}
+                        subtitle={CURRENT_DORM.subtitle}
+                        stats={CURRENT_DORM.stats}
+                        primaryAction={{
+                          label: 'Edit dorm',
+                          onPress: () => router.push('/main/student/edit-dorm'),
+                          variant: 'secondary',
+                        }}
+                      />
+                    </View>
+                  </View>
+                ) : null}
+
+                <View style={styles.sectionSpacing}>
+                  <Text style={styles.title}>Other dorm(s)</Text>
+                </View>
+
+                {OTHER_DORMS.length > 0 ? (
+                  <View style={styles.table}>
+                    {OTHER_DORMS.map((dorm, index) => (
+                      <View key={dorm.id} style={styles.tableRow}>
+                        <DormCard
+                          title={dorm.title}
+                          subtitle={dorm.subtitle}
+                          stats={dorm.stats}
+                          primaryAction={{
+                            label: 'Edit dorm',
+                            onPress: () => router.push('/main/student/edit-dorm'),
+                            variant: 'secondary',
+                          }}
+                          secondaryAction={{
+                            label: 'Switch dorm',
+                            onPress: () => router.push('/main/student/dorms/switch'),
+                            variant: 'primary',
+                          }}
+                        />
+                        {index < OTHER_DORMS.length - 1 ? <Spacer size="small" /> : null}
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.newDormButtonWrapper}>
-        <ActionPillButton
-          title="New Dorm"
-          iconName="plus"
-          onPress={() => router.push('/main/student/create-dorm')}
-        />
-      </View>
+      {isEmpty ? (
+        <View style={styles.emptyActions}>
+          <View style={styles.joinButtonWrapper}>
+            <View style={[styles.buttonBorder, isJoinPressed && styles.buttonBorderJoinPressed]}>
+              <TouchableOpacity
+                style={styles.joinButton}
+                onPress={() => router.push('/main/student/join-dorm')}
+                onPressIn={() => setIsJoinPressed(true)}
+                onPressOut={() => setIsJoinPressed(false)}
+                activeOpacity={1}
+              >
+                <Text style={styles.joinButtonText}>Join a dorm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <Text style={styles.orText}>or</Text>
+
+          <View style={styles.createButtonWrapper}>
+            <View
+              style={[styles.buttonBorder, isCreatePressed && styles.buttonBorderCreatePressed]}
+            >
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => router.push('/main/student/create-dorm')}
+                onPressIn={() => setIsCreatePressed(true)}
+                onPressOut={() => setIsCreatePressed(false)}
+                activeOpacity={1}
+              >
+                <Text style={styles.createButtonText}>Create a dorm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.newDormButtonWrapper}>
+          <ActionPillButton
+            title="New Dorm"
+            iconName="plus"
+            onPress={() => router.push('/main/student/create-dorm')}
+          />
+        </View>
+      )}
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -299,6 +381,13 @@ const styles = StyleSheet.create({
   cardSpacing: {
     marginTop: 12,
   },
+  table: {
+    marginTop: 12,
+    gap: 12,
+  },
+  tableRow: {
+    width: '100%',
+  },
   newDormButtonWrapper: {
     position: 'absolute',
     right: 16,
@@ -344,5 +433,91 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  noneFound: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noneFoundTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  noneFoundSubtitle: {
+    marginTop: 4,
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
+  },
+  noneFoundBold: {
+    fontFamily: 'Inter-Bold',
+    color: COLOURS.gray[700],
+  },
+  emptyActions: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    bottom: 112,
+    alignItems: 'center',
+    zIndex: 4,
+  },
+  joinButtonWrapper: {
+    width: '100%',
+  },
+  createButtonWrapper: {
+    width: '100%',
+  },
+  buttonBorder: {
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: COLOURS.transparent,
+    padding: 2,
+  },
+  buttonBorderJoinPressed: {
+    borderColor: COLOURS.primary,
+  },
+  buttonBorderCreatePressed: {
+    borderColor: COLOURS.primaryLight,
+  },
+  joinButton: {
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: COLOURS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  joinButtonText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    color: COLOURS.primaryMuted,
+  },
+  orText: {
+    marginVertical: 8,
+    fontFamily: 'Inter',
+    fontSize: 16,
+    color: COLOURS.black,
+  },
+  createButton: {
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: COLOURS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    color: COLOURS.black,
   },
 });
