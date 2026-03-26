@@ -1,5 +1,4 @@
 import { Stack, router } from 'expo-router';
-import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import ListItem from '../../components/ListItem';
@@ -45,6 +44,13 @@ export default function UITestHub() {
             subtitle="Test filter chips and sort dropdown variants"
             iconName="filter"
             onPress={() => router.push('/ui-tests/filter-chip-test')}
+          />
+          <Spacer size="small" />
+          <ListItem
+            title="Info Panel Component"
+            subtitle="Test stat tile layouts and metric displays"
+            iconName="chart-bar"
+            onPress={() => router.push('/ui-tests/info-panel-test')}
           />
           <Spacer size="small" />
           <ListItem
