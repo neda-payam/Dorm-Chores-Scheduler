@@ -1,5 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   BackHandler,
   Keyboard,
@@ -19,23 +19,34 @@ import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
+import { supabase } from '../../lib/supabase';
+import {
+  normaliseEmail,
+  sanitiseInput,
+  validateDisplayName,
+  validateSignUpFields,
+} from '../../lib/validation';
 
 function formatAccountType(type: string | string[]) {
   if (typeof type === 'string') {
     return type.charAt(0).toUpperCase() + type.slice(1);
-  } else {
-    return type.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(', ');
   }
+
+  return type.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(', ');
 }
 
 export default function SignUp() {
   const { accountType } = useLocalSearchParams();
 
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [notice, setNotice] = useState<{
+    type: 'error' | 'success' | 'info' | 'warning' | 'tip';
+    text: string;
+  } | null>(null);
 
   // Redirect to account-type if no accountType selected
   useEffect(() => {
@@ -45,10 +56,7 @@ export default function SignUp() {
   }, [accountType]);
 
   useEffect(() => {
-    const backAction = () => {
-      return true;
-    };
-
+    const backAction = () => true;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
@@ -62,11 +70,104 @@ export default function SignUp() {
     const hideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
     });
+
     return () => {
       showListener.remove();
       hideListener.remove();
     };
   }, []);
+
+  const handleSignUp = useCallback(async () => {
+    setNotice(null);
+
+    const trimmedDisplayName = sanitiseInput(displayName);
+    const trimmedEmail = normaliseEmail(email);
+
+    if (!trimmedDisplayName || !trimmedEmail || !password || !confirmPassword) {
+      setNotice({
+        type: 'error',
+        text: 'Please fill in all fields.',
+      });
+      return;
+    }
+
+    const displayNameResult = validateDisplayName(trimmedDisplayName);
+    if (!displayNameResult.isValid) {
+      setNotice({
+        type: 'error',
+        text: displayNameResult.error || 'Invalid display name.',
+      });
+      return;
+    }
+
+    const signUpValidationResult = validateSignUpFields(trimmedEmail, password);
+    if (!signUpValidationResult.isValid) {
+      setNotice({
+        type: 'error',
+        text: signUpValidationResult.error || 'Invalid sign up details.',
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setNotice({
+        type: 'error',
+        text: 'Passwords do not match.',
+      });
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        data: {
+          display_name: trimmedDisplayName,
+        },
+      },
+    });
+
+    console.log('AFTER signUp:', { data, error });
+
+    if (error) {
+      setNotice({
+        type: 'error',
+        text: error.message,
+      });
+      return;
+    }
+    const userId = data.user?.id;
+
+    if (userId) {
+      const selectedAccountType =
+        typeof accountType === 'string' ? accountType : (accountType?.[0] ?? '');
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          is_manager: selectedAccountType === 'manager',
+        })
+        .eq('id', userId);
+
+      if (profileError) {
+        setNotice({
+          type: 'error',
+          text: profileError.message,
+        });
+        return;
+      }
+    }
+
+    setNotice({
+      type: 'info',
+      text: 'Account created. Please check your email to confirm your account.',
+    });
+
+    router.push({
+      pathname: '/auth/confirm-email',
+      params: { email: trimmedEmail, accountType },
+    });
+  }, [accountType, displayName, email, password, confirmPassword]);
 
   const scrollContent = (
     <ScrollView
@@ -139,11 +240,14 @@ export default function SignUp() {
 
         <Spacer size="large" />
 
-        <Button
-          title="Sign Up"
-          onPress={() => router.push({ pathname: '/auth/confirm-email', params: { email } })}
-          variant="standard"
-        />
+        {notice && (
+          <>
+            <InlineNotification type={notice.type} text={notice.text} />
+            <Spacer size="medium" />
+          </>
+        )}
+
+        <Button title="Sign Up" onPress={handleSignUp} variant="standard" />
 
         <Spacer size="large" />
 
