@@ -32,10 +32,7 @@ export default function ResetPassword() {
   } | null>(null);
 
   useEffect(() => {
-    const backAction = () => {
-      return true;
-    };
-
+    const backAction = () => true;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
@@ -49,6 +46,7 @@ export default function ResetPassword() {
     const hideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
     });
+
     return () => {
       showListener.remove();
       hideListener.remove();
@@ -64,14 +62,12 @@ export default function ResetPassword() {
   const handleReset = useCallback(async () => {
     clearErrors();
 
-    // Presence checks
     const emailRequired = validateRequired(email, 'Email address');
     if (!emailRequired.isValid) {
       setEmailError(emailRequired.error!);
       return;
     }
 
-    // SQL injection checks
     const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
     if (!emailSqlCheck.isValid) {
       setEmailError(emailSqlCheck.error!);
@@ -79,6 +75,7 @@ export default function ResetPassword() {
     }
 
     const normalisedEmail = normaliseEmail(email);
+
     const { error } = await supabase.auth.resetPasswordForEmail(normalisedEmail);
 
     if (error) {
@@ -87,13 +84,13 @@ export default function ResetPassword() {
     }
 
     setNotice({
-      type: 'success',
-      text: 'Password reset email sent. Please check your inbox.',
+      type: 'info',
+      text: 'If an account exists for this email, a reset code has been sent.',
     });
 
     router.push({
       pathname: '/auth/change-password',
-      params: { email },
+      params: { email: normalisedEmail },
     });
   }, [email]);
 

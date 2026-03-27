@@ -41,7 +41,7 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
-export default function ResetPassword() {
+export default function StudentHome() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [activeKey, setActiveKey] = useState<string>('home');
 

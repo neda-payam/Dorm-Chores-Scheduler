@@ -67,3 +67,6 @@ create index if not exists idx_repair_status_changed_by
 -- Best for "show history for one repair newest-first"
 create index if not exists idx_repair_status_repair_changed_at
     on public.repair_status (repair_id, changed_at desc);
+
+create index if not exists idx_profiles_is_manager
+    on public.profiles (is_manager);    

@@ -1,5 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   BackHandler,
   Keyboard,
@@ -20,9 +20,10 @@ import InputCode from '../../components/InputCode';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
-import { validateNoSqlInjection, validatePassword } from '../../lib/validation';
+import { supabase } from '../../lib/supabase';
+import { validateNoSqlInjection, validatePassword, validateRequired } from '../../lib/validation';
 
-export default function ResetPassword() {
+export default function ChangePassword() {
   const { email } = useLocalSearchParams();
 
   const [codeValue, setCodeValue] = useState('');
@@ -37,16 +38,12 @@ export default function ResetPassword() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
-    const backAction = () => {
-      return true;
-    };
-
+    const backAction = () => true;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
   }, []);
 
-  // Track keyboard visibility for KeyboardAvoidingView offset
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
@@ -54,50 +51,63 @@ export default function ResetPassword() {
     const hideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
     });
+
     return () => {
       showListener.remove();
       hideListener.remove();
     };
   }, []);
 
-  // Redirect to reset-password if no email provided
   useEffect(() => {
     if (!email) {
       router.push('/auth/reset-password');
     }
   }, [email]);
 
-  const handleReset = () => {
+  const clearErrors = () => {
     setCodeError(null);
     setPasswordError(null);
     setConfirmPasswordError(null);
     setNotice(null);
+  };
 
-    // Required check
-    if (!codeValue) {
-      setCodeError('Confirmation code is required.');
-      return;
-    }
-    if (!password) {
-      setPasswordError('Password is required.');
-      return;
-    }
-    if (!confirmPassword) {
-      setConfirmPasswordError('Confirm password is required.');
+  const handleReset = useCallback(async () => {
+    clearErrors();
+
+    const cleanedCode = codeValue.replace(/\D/g, '');
+
+    const emailValue = typeof email === 'string' ? email : '';
+
+    const codeRequired = validateRequired(cleanedCode, 'Confirmation code');
+    if (!codeRequired.isValid) {
+      setCodeError(codeRequired.error ?? 'Confirmation code is required.');
       return;
     }
 
-    // SQL injection check
-    const codeSqlCheck = validateNoSqlInjection(codeValue, 'Confirmation code');
+    const passwordRequired = validateRequired(password, 'Password');
+    if (!passwordRequired.isValid) {
+      setPasswordError(passwordRequired.error ?? 'Password is required.');
+      return;
+    }
+
+    const confirmRequired = validateRequired(confirmPassword, 'Confirm password');
+    if (!confirmRequired.isValid) {
+      setConfirmPasswordError(confirmRequired.error ?? 'Confirm password is required.');
+      return;
+    }
+
+    const codeSqlCheck = validateNoSqlInjection(cleanedCode, 'Confirmation code');
     if (!codeSqlCheck.isValid) {
       setCodeError(codeSqlCheck.error ?? 'Confirmation code contains invalid characters.');
       return;
     }
-    const sqlCheck = validateNoSqlInjection(password, 'Password');
-    if (!sqlCheck.isValid) {
-      setPasswordError(sqlCheck.error ?? 'Password contains invalid characters.');
+
+    const passwordSqlCheck = validateNoSqlInjection(password, 'Password');
+    if (!passwordSqlCheck.isValid) {
+      setPasswordError(passwordSqlCheck.error ?? 'Password contains invalid characters.');
       return;
     }
+
     const confirmSqlCheck = validateNoSqlInjection(confirmPassword, 'Confirm password');
     if (!confirmSqlCheck.isValid) {
       setConfirmPasswordError(
@@ -106,29 +116,43 @@ export default function ResetPassword() {
       return;
     }
 
-    // Code format check
-    const codeFormatCheck = /^\d{6}$/.test(codeValue);
+    const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
     if (!codeFormatCheck) {
       setCodeError('Confirmation code must be a 6-digit number.');
       return;
     }
 
-    // Code match check
-    if (codeValue !== '123456') {
-      setCodeError('Invalid confirmation code.');
-      return;
-    }
-
-    // Password validation
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       setPasswordError(passwordValidation.error ?? 'Password is invalid.');
       return;
     }
 
-    // Match check
     if (password !== confirmPassword) {
       setConfirmPasswordError('Passwords do not match.');
+      return;
+    }
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: emailValue,
+      token: cleanedCode,
+      type: 'recovery',
+    });
+
+    if (verifyError) {
+      setCodeError(verifyError.message);
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    });
+
+    if (updateError) {
+      setNotice({
+        type: 'error',
+        text: updateError.message,
+      });
       return;
     }
 
@@ -140,7 +164,7 @@ export default function ResetPassword() {
     setTimeout(() => {
       router.push('/auth/signin');
     }, 1500);
-  };
+  }, [codeValue, confirmPassword, email, password]);
 
   const scrollContent = (
     <ScrollView
@@ -177,7 +201,7 @@ export default function ResetPassword() {
         <Spacer size="medium" />
 
         <Text style={styles.inputLabel}>Confirmation code</Text>
-        <Text style={styles.description}>The code you recieved via email</Text>
+        <Text style={styles.description}>The code you received via email</Text>
 
         <Spacer size="small" />
 

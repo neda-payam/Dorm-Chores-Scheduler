@@ -12,6 +12,10 @@
 -- If not resolved:
 --   both must be NULL.
 
+alter table public.profiles
+add constraint profiles_display_name_not_blank
+check (display_name is null or length(trim(display_name)) > 0);
+
 alter table public.repair_requests
 add constraint repair_requests_resolution_consistent
 check (

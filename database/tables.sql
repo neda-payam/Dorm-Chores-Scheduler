@@ -12,16 +12,22 @@ create type repair_urgency as enum ('low', 'medium', 'high');
 -----------------------------------------
 
 -- =========================
--- ROLES TABLE
+-- PROFILES TABLE
 -- =========================
+create table public.profiles (
+    user_id uuid not null,
+    display_name varchar check (char_length(display_name) > 0),
+    is_manager boolean not null default false,
+    created_at timestamptz not null default now(),
 
-create table public.roles (
-    role_id uuid not null default gen_random_uuid(),
-    role_name text not null,
+    constraint profiles_pkey primary key (user_id),
 
-    constraint roles_pkey primary key (role_id),
-    constraint roles_role_name_key unique (role_name)
+    constraint profiles_user_id_fkey
+        foreign key (user_id)
+        references auth.users (id)
+        on delete cascade
 );
+
 
 -- =========================
 -- PROFILES TABLE

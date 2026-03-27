@@ -19,11 +19,16 @@ import InputCode from '../../components/InputCode';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
+import { supabase } from '../../lib/supabase';
+import { normaliseEmail, validateNoSqlInjection, validateRequired } from '../../lib/validation';
 
 export default function ConfirmEmail() {
   const { email } = useLocalSearchParams();
+
   const [codeValue, setCodeValue] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   useEffect(() => {
     if (!email) {
@@ -32,16 +37,12 @@ export default function ConfirmEmail() {
   }, [email]);
 
   useEffect(() => {
-    const backAction = () => {
-      return true;
-    };
-
+    const backAction = () => true;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
   }, []);
 
-  // Track keyboard visibility for KeyboardAvoidingView offset
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
@@ -49,23 +50,83 @@ export default function ConfirmEmail() {
     const hideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
     });
+
     return () => {
       showListener.remove();
       hideListener.remove();
     };
   }, []);
 
-  const handleConfirmEmail = useCallback(() => {
-    if (!codeValue.trim()) {
+  const handleConfirmEmail = useCallback(async () => {
+    setCodeError(null);
+    setNotice(null);
+    const cleanedCode = codeValue.replace(/\D/g, '');
+
+    const emailValue = typeof email === 'string' ? normaliseEmail(email) : '';
+
+    const codeRequired = validateRequired(cleanedCode, 'Confirmation code');
+    if (!codeRequired.isValid) {
+      setCodeError(codeRequired.error ?? 'Confirmation code is required.');
       return;
     }
 
-    router.push('/');
-  }, [codeValue]);
+    const codeSqlCheck = validateNoSqlInjection(cleanedCode, 'Confirmation code');
+    if (!codeSqlCheck.isValid) {
+      setCodeError(codeSqlCheck.error ?? 'Confirmation code contains invalid characters.');
+      return;
+    }
 
-  const handleResend = useCallback(() => {
-    console.log('Resend code triggered');
-  }, []);
+    const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
+    if (!codeFormatCheck) {
+      setCodeError('Confirmation code must be a 6-digit number.');
+      return;
+    }
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: emailValue,
+      token: cleanedCode,
+      type: 'signup',
+    });
+
+    if (error) {
+      setCodeError(error.message);
+      return;
+    }
+
+    setNotice({
+      type: 'success',
+      text: 'Email confirmed successfully. Please sign in.',
+    });
+
+    setTimeout(() => {
+      router.push('/auth/signin');
+    }, 1500);
+  }, [codeValue, email]);
+
+  const handleResend = useCallback(async () => {
+    setCodeError(null);
+    setNotice(null);
+
+    const emailValue = typeof email === 'string' ? normaliseEmail(email) : '';
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: emailValue,
+    });
+
+    if (error) {
+      setNotice({
+        type: 'error',
+        text: error.message,
+      });
+      return;
+    }
+
+    setNotice({
+      type: 'success',
+      text: 'A new confirmation code has been sent.',
+    });
+  }, [email]);
 
   const scrollContent = (
     <ScrollView
@@ -110,6 +171,7 @@ export default function ConfirmEmail() {
           onChangeText={setCodeValue}
           onComplete={(code) => console.log('Code completed:', code)}
         />
+        {codeError && <InlineNotification type="error" text={codeError} style={{ marginTop: 4 }} />}
 
         <Spacer size="small" />
 
@@ -120,6 +182,13 @@ export default function ConfirmEmail() {
         <Spacer size="large" />
 
         <Button title="Submit" onPress={handleConfirmEmail} variant="standard" />
+
+        {notice && (
+          <>
+            <Spacer size="medium" />
+            <InlineNotification type={notice.type} text={notice.text} />
+          </>
+        )}
 
         <Spacer size="large" />
 
