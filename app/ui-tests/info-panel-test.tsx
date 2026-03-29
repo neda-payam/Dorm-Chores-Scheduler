@@ -24,7 +24,7 @@ export default function InfoPanelTestPage() {
 
         <Spacer size="large" />
 
-        {/* As used in the dashboard — 2x2 grid */}
+        {/* As used in the dashboard - 2x2 grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>This week</Text>
           <Spacer size="small" />

@@ -23,7 +23,7 @@ import { COLOURS } from '../../../constants/colours';
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function Security() {
+export default function PersonalDetails() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
@@ -87,15 +87,24 @@ export default function Security() {
           scrollEventThrottle={16}
         >
           <View style={styles.content}>
-            <Text style={styles.heading}>Security</Text>
+            <Text style={styles.heading}>Personal details</Text>
 
             <Spacer size="small" />
 
             <ListItem
-              title="Password"
-              subtitle="Update your password here"
-              iconName="lock"
-              onPress={() => router.push('/main/profile/change-password')}
+              title="Display name"
+              subtitle="Example Name"
+              iconName="signature"
+              onPress={() => router.push('/main/profile/edit-display-name')}
+            />
+
+            <Spacer size="small" />
+
+            <ListItem
+              title="Email address"
+              subtitle="example@email.com"
+              iconName="envelope"
+              onPress={() => router.push('/main/profile/edit-email')}
             />
 
             <Spacer size="large" />

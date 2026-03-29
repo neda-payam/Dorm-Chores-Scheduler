@@ -37,7 +37,7 @@ export default function FilterChipTestPage() {
           <Text style={styles.sectionTitle}>Filter Chips + Sort Dropdown</Text>
           <Spacer size="small" />
           <Text style={styles.subtitle}>
-            As used in the task list screen — first chip active by default
+            As used in the task list screen - first chip active by default
           </Text>
           <Spacer size="medium" />
 

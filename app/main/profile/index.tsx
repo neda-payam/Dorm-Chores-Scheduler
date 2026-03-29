@@ -56,7 +56,7 @@ export default function Profile() {
         <HeaderBackButton iconName="times" />
       </View>
 
-      {/* Header bottom shadow — fades in once user scrolls */}
+      {/* Header bottom shadow - fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"

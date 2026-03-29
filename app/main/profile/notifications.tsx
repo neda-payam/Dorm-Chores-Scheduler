@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   BackHandler,
@@ -15,16 +15,38 @@ import {
   View,
 } from 'react-native';
 
-import ListItem from '@/components/ListItem';
 import HeaderBackButton from '../../../components/HeaderBackButton';
 import Spacer from '../../../components/Spacer';
+import ToggleItem from '../../../components/ToggleItem';
 
 import { COLOURS } from '../../../constants/colours';
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function PersonalDetails() {
+const SPECIFIC_NOTIFICATIONS = [
+  { id: 'chore_assigned', label: 'New chore assignment' },
+  { id: 'chore_due', label: 'Chore due soon' },
+  { id: 'chore_overdue', label: 'Chore overdue' },
+  { id: 'chore_completed', label: 'Chore completed' },
+  { id: 'repair_submitted', label: 'New repair request submitted' },
+  { id: 'repair_status', label: 'Repair request status updated' },
+  { id: 'repair_comment', label: 'New comment on repair request' },
+  { id: 'daily_reminder', label: 'Daily chore reminder' },
+  { id: 'weekly_rotation', label: 'Weekly chore schedule generated' },
+  { id: 'announcement', label: 'System announcement' },
+  { id: 'account_activity', label: 'Account activity update' },
+];
+
+type NotificationState = Record<string, boolean>;
+
+const DEFAULT_SPECIFIC_STATE: NotificationState = Object.fromEntries(
+  SPECIFIC_NOTIFICATIONS.map((n) => [n.id, true]),
+);
+
+export default function Notifications() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [allEnabled, setAllEnabled] = useState(true);
+  const [specificState, setSpecificState] = useState<NotificationState>(DEFAULT_SPECIFIC_STATE);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
 
@@ -43,12 +65,20 @@ export default function PersonalDetails() {
   }, []);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset } = e.nativeEvent;
-    const scrollY = contentOffset.y;
-
+    const scrollY = e.nativeEvent.contentOffset.y;
     const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
     headerGradientOpacity.setValue(headerValue);
   };
+
+  // Master toggle - only controls whether notifications are globally allowed
+  const handleAllEnabledChange = useCallback((value: boolean) => {
+    setAllEnabled(value);
+  }, []);
+
+  // Individual toggle - only affects itself, independent of master
+  const handleSpecificChange = useCallback((id: string, value: boolean) => {
+    setSpecificState((prev) => ({ ...prev, [id]: value }));
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -59,7 +89,7 @@ export default function PersonalDetails() {
         <HeaderBackButton iconName="chevron-left" />
       </View>
 
-      {/* Header bottom shadow — fades in once user scrolls */}
+      {/* Header bottom shadow - fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -87,27 +117,40 @@ export default function PersonalDetails() {
           scrollEventThrottle={16}
         >
           <View style={styles.content}>
-            <Text style={styles.heading}>Personal details</Text>
+            <Text style={styles.heading}>Notifications</Text>
+            <Text style={styles.body}>Manage your notification preferences here</Text>
 
             <Spacer size="small" />
 
-            <ListItem
-              title="Display name"
-              subtitle="Example Name"
-              iconName="signature"
-              onPress={() => router.push('/main/profile/edit-display-name')}
-            />
-
-            <Spacer size="small" />
-
-            <ListItem
-              title="Email address"
-              subtitle="example@email.com"
-              iconName="envelope"
-              onPress={() => router.push('/main/profile/edit-email')}
+            {/* Master toggle */}
+            <ToggleItem
+              title="Allow notifications"
+              iconName="bell"
+              value={allEnabled}
+              onValueChange={handleAllEnabledChange}
             />
 
             <Spacer size="large" />
+
+            <Text style={styles.sectionTitle}>Specific notifications</Text>
+            <Text style={styles.body}>
+              Choose which types of notifications you&apos;d like to receive from the app
+            </Text>
+
+            <Spacer size="small" />
+
+            {/* Specific notification toggles */}
+            {SPECIFIC_NOTIFICATIONS.map((item) => (
+              <ToggleItem
+                key={item.id}
+                title={item.label}
+                value={specificState[item.id]}
+                onValueChange={(value) => handleSpecificChange(item.id, value)}
+                disabled={!allEnabled}
+              />
+            ))}
+
+            <Spacer size="medium" />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

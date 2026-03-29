@@ -159,7 +159,7 @@ export default function Dorms() {
         <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
       </View>
 
-      {/* Header bottom shadow — fades in once user scrolls */}
+      {/* Header bottom shadow - fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -321,7 +321,7 @@ export default function Dorms() {
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
 
-      {/* Navbar top shadow — visible when content overflows, hides at bottom */}
+      {/* Navbar top shadow - visible when content overflows, hides at bottom */}
       {contentOverflows && (
         <Animated.View
           style={[styles.navGradientWrapper, { opacity: navGradientOpacity }]}
