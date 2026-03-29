@@ -11,13 +11,22 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import { FontAwesome5 } from '@expo/vector-icons';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import FilterChip from '../../../components/FilterChip';
+import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import SortDropdown from '../../../components/SortDropdown';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+
+const FILTER_OPTIONS = ['All', 'Important', 'In Progress', 'Pending'];
+const SORT_OPTIONS = ['Date Reported', 'Dorm', 'Priority'];
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -40,11 +49,77 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
+type IconName = keyof typeof FontAwesome5.glyphMap;
+
+type RepairStatus = {
+  label: string;
+  backgroundColor: string;
+  textColor: string;
+};
+
+type RepairRequest = {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: IconName;
+  status: RepairStatus;
+};
+
+// Mock data combining priority and recent repairs
+const ALL_REPAIRS: RepairRequest[] = [
+  {
+    id: '1',
+    title: 'Broken bathroom light',
+    subtitle: 'Maple House - Reported by Person 1 - 20/03/2026',
+    iconName: 'lightbulb',
+    status: {
+      label: 'High',
+      backgroundColor: COLOURS.error.background,
+      textColor: COLOURS.error.text,
+    },
+  },
+  {
+    id: '2',
+    title: 'Leaking kitchen tap',
+    subtitle: 'Oak Lodge - Reported by Person 2 - 18/03/2026',
+    iconName: 'faucet',
+    status: {
+      label: 'In progress',
+      backgroundColor: COLOURS.warning.background,
+      textColor: COLOURS.warning.text,
+    },
+  },
+  {
+    id: '3',
+    title: 'Broken door hinge',
+    subtitle: 'Maple House - Reported by Person 3 - 15/03/2026',
+    iconName: 'door-open',
+    status: {
+      label: 'Pending',
+      backgroundColor: COLOURS.info.background,
+      textColor: COLOURS.info.text,
+    },
+  },
+  {
+    id: '4',
+    title: 'Fix broken sink',
+    subtitle: 'Oak Lodge - Reported by Person 4 - 14/03/2026',
+    iconName: 'faucet',
+    status: {
+      label: 'In progress',
+      backgroundColor: COLOURS.warning.background,
+      textColor: COLOURS.warning.text,
+    },
+  },
+];
+
 const GRADIENT_THRESHOLD = 24;
 
 export default function Requests() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('Date Reported');
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -92,9 +167,8 @@ export default function Requests() {
     }
   };
 
-  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({
-    ...item,
-  }));
+  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({ ...item }));
+  const isEmpty = ALL_REPAIRS.length === 0;
 
   return (
     <View style={styles.container}>
@@ -141,7 +215,62 @@ export default function Requests() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Text style={styles.title}>All Requests</Text>
+
+            {isEmpty ? (
+              <>
+                <Spacer size="large" />
+                <View style={styles.noneFound}>
+                  <View style={styles.iconWrapper}>
+                    <FontAwesome5 name="check-circle" size={40} color={COLOURS.black} />
+                  </View>
+                  <Text style={styles.noneFoundTitle}>All caught up</Text>
+                  <Text style={styles.noneFoundSubtitle}>
+                    There are currently no open repair requests across your managed dorms.
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Spacer size="medium" />
+
+                <View style={styles.chipRow}>
+                  {FILTER_OPTIONS.map((option) => (
+                    <FilterChip
+                      key={option}
+                      label={option}
+                      active={activeFilter === option}
+                      onPress={() => setActiveFilter(option)}
+                    />
+                  ))}
+                </View>
+
+                <Spacer size="small" />
+
+                <View style={styles.chipRow}>
+                  <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                </View>
+
+                <Spacer size="medium" />
+
+                {ALL_REPAIRS.map((request, index) => (
+                  <View key={request.id}>
+                    <ListItem
+                      title={request.title}
+                      iconName={request.iconName}
+                      subtitle={request.subtitle}
+                      statusChip={request.status}
+                      onPress={() => router.push(`/main/manager/view-request`)}
+                    />
+                    {index < ALL_REPAIRS.length - 1 && <Spacer size="small" />}
+                  </View>
+                ))}
+              </>
+            )}
+
+            <Spacer size="large" />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -206,21 +335,15 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
-  heading: {
+  title: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
     color: COLOURS.black,
   },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    color: COLOURS.black,
-  },
-  body: {
-    fontFamily: 'Inter',
-    fontSize: 16,
-    color: COLOURS.gray[700],
-    lineHeight: 24,
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   navGradientWrapper: {
     position: 'absolute',
@@ -245,5 +368,32 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  noneFound: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 40,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noneFoundTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  noneFoundSubtitle: {
+    marginTop: 8,
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
   },
 });

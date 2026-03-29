@@ -42,7 +42,7 @@ type DormStat = {
 type DormCardAction = {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
 };
 
 interface DormCardProps {
@@ -58,9 +58,19 @@ const BUTTON_HEIGHT = 36;
 
 function DormCardButton({ label, onPress, variant = 'primary' }: DormCardAction) {
   const [isPressed, setIsPressed] = useState(false);
-  const isPrimary = variant === 'primary';
-  const backgroundColor = isPrimary ? COLOURS.primary : COLOURS.primaryLight;
-  const textColor = isPrimary ? COLOURS.primaryMuted : COLOURS.black;
+  let backgroundColor: string = COLOURS.primary;
+  let textColor: string = COLOURS.primaryMuted;
+  let borderColor: string = COLOURS.transparent;
+
+  if (variant === 'secondary') {
+    backgroundColor = COLOURS.primaryLight;
+    textColor = COLOURS.black;
+    borderColor = COLOURS.primaryLight;
+  } else if (variant === 'danger') {
+    backgroundColor = COLOURS.input.error;
+    textColor = COLOURS.white;
+    borderColor = COLOURS.input.error;
+  }
 
   return (
     <View style={styles.buttonWrapper}>
@@ -68,7 +78,7 @@ function DormCardButton({ label, onPress, variant = 'primary' }: DormCardAction)
         style={[
           styles.buttonBorder,
           isPressed && {
-            borderColor: backgroundColor,
+            borderColor: borderColor !== COLOURS.transparent ? borderColor : backgroundColor,
             borderWidth: 2,
           },
         ]}

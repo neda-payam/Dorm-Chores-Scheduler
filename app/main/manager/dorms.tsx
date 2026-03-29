@@ -11,12 +11,17 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import { FontAwesome5 } from '@expo/vector-icons';
+import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import DormCard from '../../../components/DormCard';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
 
 const NAV_ITEMS: NavBarItem[] = [
@@ -42,9 +47,50 @@ const NAV_ITEMS: NavBarItem[] = [
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function Dorms() {
+type ManagedDorm = {
+  id: string;
+  title: string;
+  subtitle: string;
+  stats: { value: number; label: string }[];
+};
+
+// TODO: Replace with data fetched from API
+const MANAGED_DORMS: ManagedDorm[] = [
+  {
+    id: '1',
+    title: 'Maple House',
+    subtitle: 'Joined 01/01/2026',
+    stats: [
+      { value: 3, label: 'Open repairs' },
+      { value: 12, label: 'Closed repairs' },
+    ],
+  },
+  {
+    id: '2',
+    title: 'Oak Lodge',
+    subtitle: 'Joined 15/02/2026',
+    stats: [
+      { value: 1, label: 'Open repairs' },
+      { value: 7, label: 'Closed repairs' },
+    ],
+  },
+  {
+    id: '3',
+    title: 'Elm Court',
+    subtitle: 'Joined 20/03/2026',
+    stats: [
+      { value: 0, label: 'Open repairs' },
+      { value: 2, label: 'Closed repairs' },
+    ],
+  },
+];
+
+// const MANAGED_DORMS: ManagedDorm[] = [];
+
+export default function ManagerDorms() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [confirmingLeaveId, setConfirmingLeaveId] = useState<string | null>(null);
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -54,9 +100,15 @@ export default function Dorms() {
   const navGradientOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (confirmingLeaveId) {
+        setConfirmingLeaveId(null);
+        return true;
+      }
+      return true;
+    });
     return () => backHandler.remove();
-  }, []);
+  }, [confirmingLeaveId]);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -69,44 +121,39 @@ export default function Dorms() {
 
   const checkOverflow = () => {
     if (!scrollViewHeight.current || !contentHeight.current) return;
-
     const overflows = contentHeight.current > scrollViewHeight.current + 1;
     setContentOverflows(overflows);
-
-    if (!overflows) {
-      navGradientOpacity.setValue(0);
-    }
+    if (!overflows) navGradientOpacity.setValue(0);
   };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
     const scrollY = contentOffset.y;
-
     const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
     headerGradientOpacity.setValue(headerValue);
-
     if (contentHeight.current > scrollViewHeight.current) {
       const distanceFromBottom = contentSize.height - layoutMeasurement.height - scrollY;
-      const value = distanceFromBottom < GRADIENT_THRESHOLD ? 0 : 1;
-      navGradientOpacity.setValue(value);
+      navGradientOpacity.setValue(distanceFromBottom < GRADIENT_THRESHOLD ? 0 : 1);
     }
   };
 
-  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({
-    ...item,
-  }));
+  const handleLeaveConfirmed = (id: string) => {
+    // TODO: leave dorm via API using id
+    setConfirmingLeaveId(null);
+  };
+
+  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({ ...item }));
+  const isEmpty = MANAGED_DORMS.length === 0;
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
 
-      {/* Static header */}
       <View style={styles.topBar}>
         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
         <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
       </View>
 
-      {/* Header bottom shadow — fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -119,7 +166,6 @@ export default function Dorms() {
         />
       </Animated.View>
 
-      {/* Scrollable content */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -141,14 +187,75 @@ export default function Dorms() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Text style={styles.title}>Dorms</Text>
+
+            {isEmpty ? (
+              <>
+                <Spacer size="large" />
+                <View style={styles.noneFound}>
+                  <View style={styles.iconWrapper}>
+                    <FontAwesome5 name="building" size={40} color={COLOURS.black} />
+                  </View>
+                  <Text style={styles.noneFoundTitle}>No dorms yet</Text>
+                  <Text style={styles.noneFoundSubtitle}>
+                    Dorms will appear here once tenants connect them to your account
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.table}>
+                {MANAGED_DORMS.map((dorm) => {
+                  const isConfirming = confirmingLeaveId === dorm.id;
+                  return (
+                    <View key={dorm.id} style={styles.tableRow}>
+                      <DormCard
+                        title={dorm.title}
+                        subtitle={dorm.subtitle}
+                        stats={dorm.stats}
+                        primaryAction={
+                          isConfirming
+                            ? {
+                                label: 'Yes, leave dorm',
+                                onPress: () => handleLeaveConfirmed(dorm.id),
+                                variant: 'danger',
+                              }
+                            : {
+                                label: 'Leave dorm',
+                                onPress: () => setConfirmingLeaveId(dorm.id),
+                                variant: 'secondary',
+                              }
+                        }
+                      />
+                      {isConfirming && (
+                        <>
+                          <Spacer size="small" />
+                          <Text style={styles.confirmHint}>
+                            Are you sure? You will stop receiving repair requests from this dorm
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* White panel behind navbar to prevent see-through */}
+      {!isEmpty && (
+        <View style={styles.pillButtonWrapper}>
+          <ActionPillButton
+            title="Add Dorm"
+            iconName="plus"
+            onPress={() => router.push('/main/manager/add-dorm')}
+          />
+        </View>
+      )}
+
       <View style={styles.navBarBackground} pointerEvents="none" />
 
-      {/* Navbar top shadow — visible when content overflows, hides at bottom */}
       {contentOverflows && (
         <Animated.View
           style={[styles.navGradientWrapper, { opacity: navGradientOpacity }]}
@@ -163,7 +270,6 @@ export default function Dorms() {
         </Animated.View>
       )}
 
-      {/* Static navbar */}
       <NavBar
         items={items as [NavBarItem, NavBarItem, ...NavBarItem[]]}
         activeKey={'dorms'}
@@ -193,12 +299,8 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 9,
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  keyboardView: { flex: 1 },
+  scrollView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 100,
@@ -206,21 +308,59 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
-  heading: {
+  title: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
     color: COLOURS.black,
   },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    color: COLOURS.black,
+  table: {
+    marginTop: 12,
+    gap: 12,
   },
-  body: {
+  tableRow: {
+    width: '100%',
+  },
+  confirmHint: {
     fontFamily: 'Inter',
-    fontSize: 16,
+    fontSize: 13,
+    color: COLOURS.gray[500],
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+  pillButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 112,
+    zIndex: 4,
+    alignItems: 'flex-end',
+  },
+  noneFound: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 40,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noneFoundTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  noneFoundSubtitle: {
+    marginTop: 4,
+    fontFamily: 'Inter',
+    fontSize: 14,
     color: COLOURS.gray[700],
-    lineHeight: 24,
+    textAlign: 'center',
   },
   navGradientWrapper: {
     position: 'absolute',

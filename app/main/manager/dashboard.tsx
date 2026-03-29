@@ -11,12 +11,19 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
+import { FontAwesome5 } from '@expo/vector-icons';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
+import InfoPanel from '../../../components/InfoPanel';
+import InlineButton from '../../../components/InlineButton';
+import InlineNotification from '../../../components/InlineNotification';
+import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
 
 const NAV_ITEMS: NavBarItem[] = [
@@ -41,6 +48,87 @@ const NAV_ITEMS: NavBarItem[] = [
 ];
 
 const GRADIENT_THRESHOLD = 24;
+
+type IconName = keyof typeof FontAwesome5.glyphMap;
+
+type RepairStatus = {
+  label: string;
+  backgroundColor: string;
+  textColor: string;
+};
+
+const PRIORITY_REPAIRS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: IconName;
+  status: RepairStatus;
+}[] = [
+  {
+    id: '1',
+    title: 'Broken bathroom light',
+    subtitle: 'Maple House - Reported by Person 1 - 20/03/2026',
+    iconName: 'lightbulb',
+    status: {
+      label: 'High',
+      backgroundColor: COLOURS.error.background,
+      textColor: COLOURS.error.text,
+    },
+  },
+  {
+    id: '2',
+    title: 'Leaking kitchen tap',
+    subtitle: 'Oak Lodge - Reported by Person 2 - 18/03/2026',
+    iconName: 'faucet',
+    status: {
+      label: 'Medium',
+      backgroundColor: COLOURS.warning.background,
+      textColor: COLOURS.warning.text,
+    },
+  },
+  {
+    id: '3',
+    title: 'Broken door hinge',
+    subtitle: 'Maple House - Reported by Person 3 - 15/03/2026',
+    iconName: 'door-open',
+    status: {
+      label: 'Low',
+      backgroundColor: COLOURS.info.background,
+      textColor: COLOURS.info.text,
+    },
+  },
+];
+
+const RECENT_REPAIRS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: IconName;
+  status: RepairStatus;
+}[] = [
+  {
+    id: '1',
+    title: 'Fix broken sink',
+    subtitle: 'Oak Lodge - Reported by Person 4 - 14/03/2026',
+    iconName: 'faucet',
+    status: {
+      label: 'In progress',
+      backgroundColor: COLOURS.warning.background,
+      textColor: COLOURS.warning.text,
+    },
+  },
+  {
+    id: '2',
+    title: 'Replace hallway bulb',
+    subtitle: 'Elm Court - Reported by Person 5 - 12/03/2026',
+    iconName: 'lightbulb',
+    status: {
+      label: 'Pending',
+      backgroundColor: COLOURS.info.background,
+      textColor: COLOURS.info.text,
+    },
+  },
+];
 
 export default function Dashboard() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -92,9 +180,10 @@ export default function Dashboard() {
     }
   };
 
-  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({
-    ...item,
-  }));
+  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({ ...item }));
+
+  const noPriorityRepairs = PRIORITY_REPAIRS.length === 0;
+  const noRecentRepairs = RECENT_REPAIRS.length === 0;
 
   return (
     <View style={styles.container}>
@@ -141,7 +230,112 @@ export default function Dashboard() {
             requestAnimationFrame(checkOverflow);
           }}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            {/* Overview stats */}
+            <Text style={styles.title}>Overview</Text>
+            <Spacer size="small" />
+            <View style={styles.infoPanelGrid}>
+              <InfoPanel label="Open requests" value="5" />
+              <InfoPanel label="In progress" value="2" />
+              <InfoPanel label="Resolved this week" value="3" />
+              <InfoPanel label="Dorms managed" value="4" />
+            </View>
+
+            <Spacer size="large" />
+
+            {/* Priority repairs */}
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Needs attention</Text>
+              <InlineNotification
+                type="info"
+                text="Showing top 3"
+                style={styles.inlineNotification}
+              />
+            </View>
+
+            <Spacer size="medium" />
+
+            {noPriorityRepairs ? (
+              <View style={styles.emptyCard}>
+                <View style={styles.emptyIconWrapper}>
+                  <FontAwesome5 name="check" size={40} color={COLOURS.black} />
+                </View>
+                <Text style={styles.emptyTitle}>All clear</Text>
+                <Text style={styles.emptySubtitle}>
+                  No high priority repairs waiting for action
+                </Text>
+              </View>
+            ) : (
+              <View>
+                {PRIORITY_REPAIRS.map((repair, index) => (
+                  <View key={repair.id}>
+                    <ListItem
+                      title={repair.title}
+                      subtitle={repair.subtitle}
+                      iconName={repair.iconName}
+                      onPress={() => router.push('/main/manager/view-request')}
+                      statusChip={repair.status}
+                    />
+                    {index < PRIORITY_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.inlineAction}>
+              <InlineButton
+                title="View all requests"
+                onPress={() => router.push('/main/manager/requests')}
+              />
+            </View>
+
+            <Spacer size="large" />
+
+            {/* Recent activity */}
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Recent</Text>
+              <InlineNotification
+                type="info"
+                text="Showing last 5"
+                style={styles.inlineNotification}
+              />
+            </View>
+
+            <Spacer size="medium" />
+
+            {noRecentRepairs ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyTitle}>No recent activity</Text>
+                <Text style={styles.emptySubtitle}>
+                  Repair requests from your dorms will appear here
+                </Text>
+              </View>
+            ) : (
+              <View>
+                {RECENT_REPAIRS.map((repair, index) => (
+                  <View key={repair.id}>
+                    <ListItem
+                      title={repair.title}
+                      subtitle={repair.subtitle}
+                      iconName={repair.iconName}
+                      onPress={() => router.push('/main/manager/view-request')}
+                      statusChip={repair.status}
+                    />
+                    {index < RECENT_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.inlineAction}>
+              <InlineButton
+                title="View all requests"
+                onPress={() => router.push('/main/manager/requests')}
+              />
+            </View>
+
+            <Spacer size="large" />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -206,21 +400,52 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
-  heading: {
+  title: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
     color: COLOURS.black,
   },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    color: COLOURS.black,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  body: {
+  inlineNotification: {
+    flexShrink: 1,
+    flexGrow: 0,
+  },
+  infoPanelGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  inlineAction: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyIconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
     fontFamily: 'Inter',
-    fontSize: 16,
+    fontSize: 14,
     color: COLOURS.gray[700],
-    lineHeight: 24,
+    textAlign: 'center',
   },
   navGradientWrapper: {
     position: 'absolute',
