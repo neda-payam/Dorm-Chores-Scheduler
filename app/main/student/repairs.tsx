@@ -241,7 +241,7 @@ export default function Repairs() {
                           title={request.title}
                           iconName={request.iconName}
                           subtitle={request.subtitle}
-                          onPress={() => router.push(`/main/student/repairs/${request.id}`)}
+                          onPress={() => router.push(`/main/student/view-repair`)}
                         />
 
                         {index < REPAIR_REQUESTS.length - 1 && <Spacer size="small" />}

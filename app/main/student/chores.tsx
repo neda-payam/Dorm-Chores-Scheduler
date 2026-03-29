@@ -260,7 +260,7 @@ export default function Chores() {
                       title={chore.title}
                       iconName={chore.iconName}
                       subtitle={chore.subtitle}
-                      onPress={() => router.push(`/main/student/chore/${chore.id}`)}
+                      onPress={() => router.push(`/main/student/view-chore`)}
                       statusChip={
                         chore.overdue
                           ? {

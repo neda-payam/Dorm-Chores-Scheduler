@@ -18,9 +18,9 @@ import {
 import { FontAwesome5 } from '@expo/vector-icons';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
 import BlockButton from '../../../components/BlockButton';
+import InfoPanel from '../../../components/InfoPanel';
 import InlineButton from '../../../components/InlineButton';
 import InlineNotification from '../../../components/InlineNotification';
-import InfoPanel from '../../../components/InfoPanel';
 import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
@@ -262,7 +262,7 @@ export default function Home() {
                       title={task.title}
                       subtitle={task.subtitle}
                       iconName={task.iconName}
-                      onPress={() => router.push(`/main/student/chore/${task.id}`)}
+                      onPress={() => router.push(`/main/student/view-chore`)}
                       statusChip={
                         task.overdue
                           ? {
@@ -329,7 +329,7 @@ export default function Home() {
                       title={repair.title}
                       subtitle={repair.subtitle}
                       iconName={repair.iconName}
-                      onPress={() => router.push(`/main/student/repairs/${repair.id}`)}
+                      onPress={() => router.push(`/main/student/view-repair`)}
                       statusChip={repair.status}
                     />
                     {index < OPEN_REPAIRS.length - 1 ? <Spacer size="small" /> : null}

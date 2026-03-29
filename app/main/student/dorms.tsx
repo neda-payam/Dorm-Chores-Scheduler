@@ -252,7 +252,7 @@ export default function Dorms() {
                           }}
                           secondaryAction={{
                             label: 'Switch dorm',
-                            onPress: () => router.push('/main/student/dorms/switch'),
+                            onPress: () => {}, // TODO: Implement switch dorm functionality
                             variant: 'primary',
                           }}
                         />
@@ -302,7 +302,14 @@ export default function Dorms() {
           </View>
         </View>
       ) : (
-        <View style={styles.newDormButtonWrapper}>
+        <View style={styles.pillButtonsWrapper}>
+          <ActionPillButton
+            title="Join Dorm"
+            iconName="sign-in-alt"
+            onPress={() => router.push('/main/student/join-dorm')}
+            variant="secondary"
+          />
+          <Spacer size="small" />
           <ActionPillButton
             title="New Dorm"
             iconName="plus"
@@ -390,11 +397,12 @@ const styles = StyleSheet.create({
   tableRow: {
     width: '100%',
   },
-  newDormButtonWrapper: {
+  pillButtonsWrapper: {
     position: 'absolute',
     right: 16,
     bottom: 112,
     zIndex: 4,
+    alignItems: 'flex-end',
   },
   heading: {
     fontFamily: 'Inter-Bold',

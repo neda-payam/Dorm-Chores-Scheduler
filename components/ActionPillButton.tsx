@@ -9,12 +9,14 @@
  * import ActionPillButton from '@/components/ActionPillButton';
  *
  * <ActionPillButton title="New Chore" iconName="plus" onPress={() => console.log('pressed')} />
+ * <ActionPillButton title="Join Dorm" iconName="sign-in-alt" onPress={() => {}} variant="secondary" />
  * ```
  *
  * @props
  * - title: string - The label displayed inside the pill
  * - iconName: keyof typeof FontAwesome5.glyphMap - FontAwesome5 icon name
  * - onPress: () => void - Callback triggered on press
+ * - variant?: 'primary' | 'secondary' - Visual style (default: 'primary')
  * - style?: ViewStyle - Custom styles for the outer wrapper
  * - disabled?: boolean - Whether the button is disabled (default: false)
  */
@@ -28,29 +30,50 @@ interface ActionPillButtonProps {
   title: string;
   iconName: keyof typeof FontAwesome5.glyphMap;
   onPress: () => void;
+  variant?: 'primary' | 'secondary';
   style?: ViewStyle;
   disabled?: boolean;
 }
 
-const BACKGROUND_COLOUR = COLOURS.primary;
-const ACCENT_COLOUR = COLOURS.primaryMuted;
+const VARIANTS = {
+  primary: {
+    background: COLOURS.primary,
+    accent: COLOURS.primaryMuted,
+    pressedBorder: COLOURS.primary,
+  },
+  secondary: {
+    background: COLOURS.primaryLight,
+    accent: COLOURS.black,
+    pressedBorder: COLOURS.primaryLight,
+  },
+} as const;
 
 export default function ActionPillButton({
   title,
   onPress,
   iconName,
+  variant = 'primary',
   style,
   disabled = false,
 }: ActionPillButtonProps) {
   const [isPressed, setIsPressed] = useState(false);
 
+  const colours = VARIANTS[variant];
+
   return (
     <View style={[styles.wrapper, style]}>
       <View
-        style={[styles.borderContainer, isPressed && !disabled && styles.borderContainerPressed]}
+        style={[
+          styles.borderContainer,
+          isPressed && !disabled && { borderColor: colours.pressedBorder },
+        ]}
       >
         <TouchableOpacity
-          style={[styles.button, disabled && styles.buttonDisabled]}
+          style={[
+            styles.button,
+            { backgroundColor: colours.background },
+            disabled && styles.buttonDisabled,
+          ]}
           onPress={onPress}
           onPressIn={() => setIsPressed(true)}
           onPressOut={() => setIsPressed(false)}
@@ -60,8 +83,8 @@ export default function ActionPillButton({
           accessibilityLabel={title}
           accessibilityState={{ disabled }}
         >
-          <FontAwesome5 name={iconName} size={16} color={ACCENT_COLOUR} solid />
-          <Text style={styles.label}>{title}</Text>
+          <FontAwesome5 name={iconName} size={16} color={colours.accent} solid />
+          <Text style={[styles.label, { color: colours.accent }]}>{title}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -78,13 +101,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 2,
   },
-  borderContainerPressed: {
-    borderColor: BACKGROUND_COLOUR,
-  },
   button: {
     height: 36,
     borderRadius: 32,
-    backgroundColor: BACKGROUND_COLOUR,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -96,6 +115,5 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
-    color: ACCENT_COLOUR,
   },
 });
