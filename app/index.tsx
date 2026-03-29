@@ -24,6 +24,10 @@ export default function Index() {
         <Link href="/main/student/home">
           <Text style={styles.linkText}>Go to Student Home</Text>
         </Link>
+
+        <Link href="/broken">
+          <Text style={styles.linkText}>Sitemap (Intentionally broken)</Text>
+        </Link>
       </View>
     </View>
   );

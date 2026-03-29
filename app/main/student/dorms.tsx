@@ -155,7 +155,7 @@ export default function Dorms() {
 
       {/* Static header */}
       <View style={styles.topBar}>
-        <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+        <ProfilePicture variant="small" onPress={() => router.push('/main/profile/index')} />
         <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
       </View>
 

@@ -150,7 +150,7 @@ export default function ManagerDorms() {
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
 
       <View style={styles.topBar}>
-        <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+        <ProfilePicture variant="small" onPress={() => router.push('/main/profile/index')} />
         <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
       </View>
 

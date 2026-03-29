@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -11,16 +11,19 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
-import HeaderBackButton from '../../components/HeaderBackButton';
+import ListItem from '@/components/ListItem';
+import HeaderBackButton from '../../../components/HeaderBackButton';
+import Spacer from '../../../components/Spacer';
 
-import { COLOURS } from '../../constants/colours';
+import { COLOURS } from '../../../constants/colours';
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function Chores() {
+export default function PersonalDetails() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
@@ -53,7 +56,7 @@ export default function Chores() {
 
       {/* Static header */}
       <View style={styles.topBar}>
-        <HeaderBackButton iconName="times" />
+        <HeaderBackButton iconName="chevron-left" />
       </View>
 
       {/* Header bottom shadow — fades in once user scrolls */}
@@ -83,7 +86,29 @@ export default function Chores() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Text style={styles.heading}>Personal details</Text>
+
+            <Spacer size="small" />
+
+            <ListItem
+              title="Display name"
+              subtitle="Example Name"
+              iconName="signature"
+              onPress={() => router.push('/main/profile/edit-display-name')}
+            />
+
+            <Spacer size="small" />
+
+            <ListItem
+              title="Email address"
+              subtitle="example@email.com"
+              iconName="envelope"
+              onPress={() => router.push('/main/profile/edit-email')}
+            />
+
+            <Spacer size="large" />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
