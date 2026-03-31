@@ -15,15 +15,18 @@ import {
   View,
 } from 'react-native';
 
-import ListItem from '@/components/ListItem';
+import Button from '../../../components/Button';
 import HeaderBackButton from '../../../components/HeaderBackButton';
+import InlineNotification from '../../../components/InlineNotification';
+import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
 
 const GRADIENT_THRESHOLD = 24;
 
-export default function Security() {
+export default function EditEmail() {
+  const [email, setEmail] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
@@ -36,6 +39,7 @@ export default function Security() {
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
     return () => {
       showListener.remove();
       hideListener.remove();
@@ -43,9 +47,7 @@ export default function Security() {
   }, []);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset } = e.nativeEvent;
-    const scrollY = contentOffset.y;
-
+    const scrollY = e.nativeEvent.contentOffset.y;
     const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
     headerGradientOpacity.setValue(headerValue);
   };
@@ -54,12 +56,10 @@ export default function Security() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
 
-      {/* Static header */}
       <View style={styles.topBar}>
         <HeaderBackButton iconName="chevron-left" />
       </View>
 
-      {/* Header bottom shadow - fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -72,7 +72,6 @@ export default function Security() {
         />
       </Animated.View>
 
-      {/* Scrollable content */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -87,21 +86,44 @@ export default function Security() {
           scrollEventThrottle={16}
         >
           <View style={styles.content}>
-            <Text style={styles.heading}>Security</Text>
-            <Text style={styles.body}>Manage your account security settings here</Text>
+            <Text style={styles.heading}>Change email address</Text>
+
+            <Spacer size="small" />
+
+            <Text style={styles.body}>
+              Enter the email address you’d like to use for your account. Keep in mind that this
+              will be used for account-related updates and login.
+            </Text>
 
             <Spacer size="medium" />
 
-            <ListItem
-              title="Password"
-              subtitle="Update your password here"
-              iconName="key"
-              onPress={() => router.push('/main/profile/change-password')}
+            <InlineNotification
+              type="warning"
+              text="Changing your email address will update the email used to sign in and receive account notifications."
+            />
+
+            <Spacer size="medium" />
+
+            <Text style={styles.inputLabel}>New email address</Text>
+            <Input
+              value={email}
+              onChangeText={setEmail}
+              placeholder="example@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
 
             <Spacer size="large" />
           </View>
         </ScrollView>
+
+        <View style={styles.footer}>
+          <Button
+            title="Request change"
+            onPress={() => router.push('/main/profile/confirm-new-email')}
+            variant="standard"
+          />
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -145,15 +167,22 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: COLOURS.black,
   },
-  sectionTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 22,
-    color: COLOURS.black,
-  },
   body: {
     fontFamily: 'Inter',
     fontSize: 16,
     color: COLOURS.gray[700],
     lineHeight: 24,
+  },
+  inputLabel: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 14,
+    color: COLOURS.black,
+    marginBottom: 8,
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
+    paddingTop: 12,
+    backgroundColor: COLOURS.white,
   },
 });

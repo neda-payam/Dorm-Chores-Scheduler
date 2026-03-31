@@ -93,7 +93,7 @@ export default function PersonalDetails() {
 
             <ListItem
               title="Display name"
-              subtitle="Example Name"
+              subtitle="Your Name"
               iconName="signature"
               onPress={() => router.push('/main/profile/edit-display-name')}
             />
@@ -102,7 +102,7 @@ export default function PersonalDetails() {
 
             <ListItem
               title="Email address"
-              subtitle="example@email.com"
+              subtitle="your@email.com"
               iconName="envelope"
               onPress={() => router.push('/main/profile/edit-email')}
             />

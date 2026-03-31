@@ -28,6 +28,8 @@ import {
   validateRequired,
 } from '../../../lib/validation';
 
+import { supabase } from '../../../lib/supabase';
+
 const GRADIENT_THRESHOLD = 24;
 
 export default function ChangePassword() {
@@ -109,28 +111,32 @@ export default function ChangePassword() {
       return;
     }
 
-    // setLoading(true);
+    setLoading(true);
 
-    // Run password update request here. Make sure to log the user out of all other sessions/devices.
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
 
-    // setLoading(false);
+      if (updateError) {
+        setNotice({ type: 'error', text: updateError.message });
+        return;
+      }
 
-    // if (updateError) {
-    //   setNotice({ type: 'error', text: updateError.message });
-    //   return;
-    // }
+      setNotice({
+        type: 'success',
+        text: 'Password updated successfully!',
+      });
 
-    // setNotice({
-    //   type: 'success',
-    //   text: 'Password updated successfully!',
-    // });
+      setNewPassword('');
+      setConfirmPassword('');
 
-    setNewPassword('');
-    setConfirmPassword('');
-
-    setTimeout(() => {
-      router.back();
-    }, 1500);
+      setTimeout(() => {
+        router.back();
+      }, 1500);
+    } finally {
+      setLoading(false);
+    }
   }, [newPassword, confirmPassword]);
 
   return (
