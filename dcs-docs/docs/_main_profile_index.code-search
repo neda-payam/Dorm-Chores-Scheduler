@@ -1,0 +1,34 @@
+# Query: /main/profile/index
+# ContextLines: 1
+
+6 results - 6 files
+
+app/main/manager/dashboard.tsx:
+  193        <View style={styles.topBar}>
+  194:         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+  195          <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
+
+app/main/manager/dorms.tsx:
+  152        <View style={styles.topBar}>
+  153:         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+  154          <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
+
+app/main/manager/requests.tsx:
+  178        <View style={styles.topBar}>
+  179:         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+  180          <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
+
+app/main/student/chores.tsx:
+  171        <View style={styles.topBar}>
+  172:         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+  173          <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
+
+app/main/student/dorms.tsx:
+  157        <View style={styles.topBar}>
+  158:         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+  159          <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
+
+app/main/student/repairs.tsx:
+  150        <View style={styles.topBar}>
+  151:         <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
+  152          <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />

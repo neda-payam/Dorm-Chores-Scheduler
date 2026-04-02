@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -11,10 +11,14 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 
 import HeaderBackButton from '../../../components/HeaderBackButton';
+import ListItem from '../../../components/ListItem';
+import ProfilePicture from '../../../components/ProfilePicture';
+import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
 
@@ -33,6 +37,7 @@ export default function Profile() {
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+
     return () => {
       showListener.remove();
       hideListener.remove();
@@ -51,12 +56,10 @@ export default function Profile() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
 
-      {/* Static header */}
       <View style={styles.topBar}>
         <HeaderBackButton iconName="times" />
       </View>
 
-      {/* Header bottom shadow - fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -69,7 +72,6 @@ export default function Profile() {
         />
       </Animated.View>
 
-      {/* Scrollable content */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -83,7 +85,64 @@ export default function Profile() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          <View style={styles.content}></View>
+          <View style={styles.content}>
+            <Spacer size="large" />
+
+            <View style={styles.profileSection}>
+              <ProfilePicture variant="large" />
+              <Spacer size="medium" />
+              <Text style={styles.heading}>EXAMPLE NAME</Text>
+              <Text style={styles.accountType}>Student Account</Text>
+            </View>
+
+            <Spacer size="large" />
+
+            <Text style={styles.sectionTitle}>Settings</Text>
+            <Spacer size="small" />
+
+            <ListItem
+              title="Personal details"
+              subtitle="Update your account details"
+              iconName="user-circle"
+              onPress={() => router.push('/main/profile/personal-details')}
+            />
+            <ListItem
+              title="Notifications"
+              subtitle="Customise the notifications you receive"
+              iconName="bell"
+              onPress={() => router.push('/main/profile/notifications')}
+            />
+            <ListItem
+              title="Security"
+              subtitle="Manage your account security"
+              iconName="shield-alt"
+              onPress={() => router.push('/main/profile/security')}
+            />
+
+            <Spacer size="large" />
+
+            <Text style={styles.sectionTitle}>Actions</Text>
+            <Spacer size="small" />
+
+            <ListItem
+              title="Delete account"
+              subtitle="Close your account and delete all data"
+              iconName="times-circle"
+              onPress={() => router.push('/main/profile/delete-account')}
+            />
+            <ListItem
+              title="Log out"
+              subtitle="Log out of your account"
+              iconName="sign-out-alt"
+              onPress={() => {}}
+            />
+
+            <Spacer size="large" />
+
+            <Text style={styles.versionHeading}>Your app version</Text>
+            <Spacer size="small" />
+            <Text style={styles.body}>v1.0.0 (build number)</Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -123,14 +182,29 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
+  profileSection: {
+    alignItems: 'center',
+  },
   heading: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: 'Inter-Black',
     fontSize: 28,
     color: COLOURS.black,
+    textAlign: 'center',
+  },
+  accountType: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    color: COLOURS.black,
+    textAlign: 'center',
   },
   sectionTitle: {
     fontFamily: 'Inter-Bold',
     fontSize: 22,
+    color: COLOURS.black,
+  },
+  versionHeading: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 14,
     color: COLOURS.black,
   },
   body: {
