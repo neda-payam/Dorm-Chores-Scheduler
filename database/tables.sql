@@ -29,24 +29,7 @@ create table public.profiles (
 );
 
 
--- =========================
--- PROFILES TABLE
--- =========================
 
-create table public.profiles (
-    user_id uuid not null default auth.uid(),
-    name text not null,
-    email text not null,
-    role_id uuid not null,
-    created_at timestamptz not null default now(),
-
-    constraint profiles_pkey primary key (user_id),
-    constraint profiles_email_key unique (email),
-    constraint profiles_role_id_fkey 
-        foreign key (role_id) 
-        references public.roles (role_id) 
-        on delete restrict
-);
 
 
 -- =========================

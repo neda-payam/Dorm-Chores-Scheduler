@@ -191,7 +191,7 @@ export default function Dashboard() {
 
       {/* Static header */}
       <View style={styles.topBar}>
-        <ProfilePicture variant="small" onPress={() => router.push('/main/profile/index')} />
+        <ProfilePicture variant="small" onPress={() => router.push('/main/profile')} />
         <AvailabilityBadge isAvailable={isAvailable} onChange={setIsAvailable} />
       </View>
 
