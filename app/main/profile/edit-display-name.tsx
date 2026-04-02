@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   BackHandler,
-  Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -26,22 +25,12 @@ const GRADIENT_THRESHOLD = 24;
 
 export default function EditDisplayName() {
   const [displayName, setDisplayName] = useState('');
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => backHandler.remove();
-  }, []);
-
-  useEffect(() => {
-    const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
-    const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
-    return () => {
-      showListener.remove();
-      hideListener.remove();
-    };
   }, []);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
