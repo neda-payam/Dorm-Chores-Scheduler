@@ -16,123 +16,79 @@ import {
 } from 'react-native';
 
 import { FontAwesome5 } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
+import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
-import InfoPanel from '../../../components/InfoPanel';
+import FilterChip from '../../../components/FilterChip';
 import InlineButton from '../../../components/InlineButton';
-import InlineNotification from '../../../components/InlineNotification';
 import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import SortDropdown from '../../../components/SortDropdown';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+
+const FILTER_OPTIONS = ['All', 'Mine', 'Completed'];
+const SORT_OPTIONS = ['Due Date'];
 
 const NAV_ITEMS: NavBarItem[] = [
   {
     key: 'home',
     label: 'Home',
     iconName: 'home',
-    onPress: () => router.push('/main/manager/dashboard'),
+    onPress: () => router.push('/main/student/home'),
   },
   {
-    key: 'requests',
-    label: 'Requests',
-    iconName: 'wrench',
-    onPress: () => router.push('/main/manager/requests'),
+    key: 'chores',
+    label: 'Chores',
+    iconName: 'broom',
+    onPress: () => router.push('/main/student/chores'),
+  },
+  {
+    key: 'repairs',
+    label: 'Repairs',
+    iconName: 'tools',
+    onPress: () => router.push('/main/student/repairs'),
   },
   {
     key: 'dorms',
     label: 'Dorms',
-    iconName: 'building',
-    onPress: () => router.push('/main/manager/dorms'),
+    iconName: 'bed',
+    onPress: () => router.push('/main/student/dorms'),
+  },
+];
+
+type RepairSummary = {
+  id: string;
+  title: string;
+  iconName: keyof typeof FontAwesome5.glyphMap;
+  subtitle: string;
+};
+
+const REPAIR_REQUESTS: RepairSummary[] = [
+  {
+    id: '1',
+    title: 'Fix broken sink',
+    iconName: 'faucet',
+    subtitle: 'Created by You - 20/02/2026',
+  },
+  {
+    id: '2',
+    title: 'Repair door lock',
+    iconName: 'door-closed',
+    subtitle: 'Created by Person 2 - 18/02/2026',
   },
 ];
 
 const GRADIENT_THRESHOLD = 24;
 
-type IconName = keyof typeof FontAwesome5.glyphMap;
-
-type RepairStatus = {
-  label: string;
-  backgroundColor: string;
-  textColor: string;
-};
-
-const PRIORITY_REPAIRS: {
-  id: string;
-  title: string;
-  subtitle: string;
-  iconName: IconName;
-  status: RepairStatus;
-}[] = [
-  {
-    id: '1',
-    title: 'Broken bathroom light',
-    subtitle: 'Maple House - Reported by Person 1 - 20/03/2026',
-    iconName: 'lightbulb',
-    status: {
-      label: 'High',
-      backgroundColor: COLOURS.error.background,
-      textColor: COLOURS.error.text,
-    },
-  },
-  {
-    id: '2',
-    title: 'Leaking kitchen tap',
-    subtitle: 'Oak Lodge - Reported by Person 2 - 18/03/2026',
-    iconName: 'faucet',
-    status: {
-      label: 'Medium',
-      backgroundColor: COLOURS.warning.background,
-      textColor: COLOURS.warning.text,
-    },
-  },
-  {
-    id: '3',
-    title: 'Broken door hinge',
-    subtitle: 'Maple House - Reported by Person 3 - 15/03/2026',
-    iconName: 'door-open',
-    status: {
-      label: 'Low',
-      backgroundColor: COLOURS.info.background,
-      textColor: COLOURS.info.text,
-    },
-  },
-];
-
-const RECENT_REPAIRS: {
-  id: string;
-  title: string;
-  subtitle: string;
-  iconName: IconName;
-  status: RepairStatus;
-}[] = [
-  {
-    id: '1',
-    title: 'Fix broken sink',
-    subtitle: 'Oak Lodge - Reported by Person 4 - 14/03/2026',
-    iconName: 'faucet',
-    status: {
-      label: 'In progress',
-      backgroundColor: COLOURS.warning.background,
-      textColor: COLOURS.warning.text,
-    },
-  },
-  {
-    id: '2',
-    title: 'Replace hallway bulb',
-    subtitle: 'Elm Court - Reported by Person 5 - 12/03/2026',
-    iconName: 'lightbulb',
-    status: {
-      label: 'Pending',
-      backgroundColor: COLOURS.info.background,
-      textColor: COLOURS.info.text,
-    },
-  },
-];
-
-export default function Dashboard() {
+export default function Repairs() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('Due Date');
+  const isConnected = true; // Defines whether the user is connected to a manager (i.e. has access to repair requests) or not. Set to false to show the "not connected" state.
+  const qrValue = 'dorm-chores-scheduler:manager-connect:sample';
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -180,10 +136,11 @@ export default function Dashboard() {
     }
   };
 
-  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({ ...item }));
+  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({
+    ...item,
+  }));
 
-  const noPriorityRepairs = PRIORITY_REPAIRS.length === 0;
-  const noRecentRepairs = RECENT_REPAIRS.length === 0;
+  const isEmpty = REPAIR_REQUESTS.length === 0;
 
   return (
     <View style={styles.container}>
@@ -231,113 +188,100 @@ export default function Dashboard() {
           }}
         >
           <View style={styles.content}>
-            {/* Overview stats */}
-            <Text style={styles.title}>Overview</Text>
-            <Spacer size="small" />
-            <View style={styles.infoPanelGrid}>
-              <InfoPanel label="Open requests" value="5" />
-              <InfoPanel label="In progress" value="2" />
-              <InfoPanel label="Resolved this week" value="3" />
-              <InfoPanel label="Dorms managed" value="4" />
-            </View>
+            {isConnected ? (
+              <>
+                <Text style={styles.title}>Repair requests</Text>
 
-            <Spacer size="large" />
+                {isEmpty ? (
+                  <>
+                    <Spacer size="large" />
 
-            {/* Priority repairs */}
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>Needs attention</Text>
-              <InlineNotification
-                type="info"
-                text="Showing top 3"
-                style={styles.inlineNotification}
-              />
-            </View>
+                    <View style={styles.noneFound}>
+                      <View style={styles.iconWrapper}>
+                        <FontAwesome5 name="wrench" size={40} color={COLOURS.black} />
+                      </View>
 
-            <Spacer size="medium" />
+                      <Text style={styles.noneFoundTitle}>No repairs found</Text>
 
-            {noPriorityRepairs ? (
-              <View style={styles.emptyCard}>
-                <View style={styles.emptyIconWrapper}>
-                  <FontAwesome5 name="check" size={40} color={COLOURS.black} />
+                      <Text style={styles.noneFoundSubtitle}>
+                        Something need repaired?{' '}
+                        <InlineButton
+                          title="Request repair"
+                          onPress={() => router.push('/main/student/request-repair')}
+                        />
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Spacer size="medium" />
+
+                    <View style={styles.chipRow}>
+                      {FILTER_OPTIONS.map((option) => (
+                        <FilterChip
+                          key={option}
+                          label={option}
+                          active={activeFilter === option}
+                          onPress={() => setActiveFilter(option)}
+                        />
+                      ))}
+                    </View>
+
+                    <Spacer size="small" />
+
+                    <View style={styles.chipRow}>
+                      <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                    </View>
+
+                    <Spacer size="medium" />
+
+                    {REPAIR_REQUESTS.map((request, index) => (
+                      <View key={request.id}>
+                        <ListItem
+                          title={request.title}
+                          iconName={request.iconName}
+                          subtitle={request.subtitle}
+                          onPress={() => router.push(`/main/student/view-repair`)}
+                        />
+
+                        {index < REPAIR_REQUESTS.length - 1 && <Spacer size="small" />}
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                <Spacer size="large" />
+              </>
+            ) : (
+              <View style={styles.notConnected}>
+                <Spacer size="large" />
+                <View style={styles.qrCode}>
+                  <QRCode value={qrValue} size={300} />
                 </View>
-                <Text style={styles.emptyTitle}>All clear</Text>
-                <Text style={styles.emptySubtitle}>
-                  No high priority repairs waiting for action
+                <Spacer size="large" />
+                <View style={styles.qrIconWrapper}>
+                  <FontAwesome5 name="wrench" size={28} color={COLOURS.black} />
+                </View>
+                <Text style={styles.notConnectedTitle}>Not connected</Text>
+                <Text style={styles.notConnectedSubtitle}>
+                  To begin sending repair requests, your building manager must scan the above QR
+                  code.
                 </Text>
               </View>
-            ) : (
-              <View>
-                {PRIORITY_REPAIRS.map((repair, index) => (
-                  <View key={repair.id}>
-                    <ListItem
-                      title={repair.title}
-                      subtitle={repair.subtitle}
-                      iconName={repair.iconName}
-                      onPress={() => router.push('/main/manager/view-request')}
-                      statusChip={repair.status}
-                    />
-                    {index < PRIORITY_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
-                  </View>
-                ))}
-              </View>
             )}
-
-            <View style={styles.inlineAction}>
-              <InlineButton
-                title="View all requests"
-                onPress={() => router.push('/main/manager/requests')}
-              />
-            </View>
-
-            <Spacer size="large" />
-
-            {/* Recent activity */}
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>Recent</Text>
-              <InlineNotification
-                type="info"
-                text="Showing last 5"
-                style={styles.inlineNotification}
-              />
-            </View>
-
-            <Spacer size="medium" />
-
-            {noRecentRepairs ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>No recent activity</Text>
-                <Text style={styles.emptySubtitle}>
-                  Repair requests from your dorms will appear here
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {RECENT_REPAIRS.map((repair, index) => (
-                  <View key={repair.id}>
-                    <ListItem
-                      title={repair.title}
-                      subtitle={repair.subtitle}
-                      iconName={repair.iconName}
-                      onPress={() => router.push('/main/manager/view-request')}
-                      statusChip={repair.status}
-                    />
-                    {index < RECENT_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <View style={styles.inlineAction}>
-              <InlineButton
-                title="View all requests"
-                onPress={() => router.push('/main/manager/requests')}
-              />
-            </View>
-
-            <Spacer size="large" />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {isConnected && (
+        <View style={styles.actionButtonWrapper}>
+          <ActionPillButton
+            title="New Request"
+            iconName="plus"
+            onPress={() => router.push('/main/student/request-repair')}
+          />
+        </View>
+      )}
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -360,7 +304,7 @@ export default function Dashboard() {
       {/* Static navbar */}
       <NavBar
         items={items as [NavBarItem, NavBarItem, ...NavBarItem[]]}
-        activeKey={'home'}
+        activeKey={'repairs'}
         style={styles.navBar}
       />
     </View>
@@ -405,47 +349,32 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: COLOURS.black,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  heading: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: COLOURS.black,
   },
-  inlineNotification: {
-    flexShrink: 1,
-    flexGrow: 0,
+  sectionTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 22,
+    color: COLOURS.black,
   },
-  infoPanelGrid: {
+  body: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    color: COLOURS.gray[700],
+    lineHeight: 24,
+  },
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
-  inlineAction: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  emptyCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyIconWrapper: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    marginTop: 8,
-    fontFamily: 'Inter-Bold',
-    fontSize: 24,
-    color: COLOURS.black,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: COLOURS.gray[700],
-    textAlign: 'center',
+  actionButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 112,
+    zIndex: 4,
   },
   navGradientWrapper: {
     position: 'absolute',
@@ -470,5 +399,62 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  noneFound: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noneFoundTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  noneFoundSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
+  },
+  notConnected: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  qrCode: {
+    width: 300,
+    height: 300,
+    backgroundColor: COLOURS.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrIconWrapper: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notConnectedTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  notConnectedSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
   },
 });

@@ -1,5 +1,5 @@
 import { Stack, router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import HeaderBackButton from '../../components/HeaderBackButton';
 import ListItem from '../../components/ListItem';
 import Spacer from '../../components/Spacer';
@@ -9,7 +9,7 @@ export default function UITestHub() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         <View style={styles.header}>
           <HeaderBackButton iconName="times" />
         </View>
@@ -111,7 +111,7 @@ export default function UITestHub() {
         </View>
 
         <Spacer size="large" />
-      </View>
+      </ScrollView>
     </>
   );
 }

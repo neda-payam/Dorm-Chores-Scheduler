@@ -61,6 +61,12 @@ interface ListItemProps {
   onPress: () => void;
   iconColor?: string;
   style?: object;
+
+  statusChip?: {
+    label: string;
+    backgroundColor: string;
+    textColor: string;
+  };
 }
 
 export default function ListItem({
@@ -70,6 +76,7 @@ export default function ListItem({
   onPress,
   iconColor = COLOURS.black,
   style,
+  statusChip,
 }: ListItemProps) {
   return (
     // TouchableHighlight provides press feedback with underlay color
@@ -87,7 +94,17 @@ export default function ListItem({
 
         {/* Text content area (title and optional subtitle) */}
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>{title}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{title}</Text>
+            {statusChip && (
+              <View style={[styles.statusChip, { backgroundColor: statusChip.backgroundColor }]}>
+                <Text style={[styles.statusChipText, { color: statusChip.textColor }]}>
+                  {statusChip.label}
+                </Text>
+              </View>
+            )}
+          </View>
+
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
 
@@ -125,6 +142,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   title: {
     fontFamily: 'Inter-Bold',
     fontSize: 14,
@@ -137,5 +159,16 @@ const styles = StyleSheet.create({
     color: COLOURS.black,
     lineHeight: 14,
     marginTop: 2,
+  },
+  statusChip: {
+    height: 16,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusChipText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
   },
 });

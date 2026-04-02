@@ -1,0 +1,135 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  BackHandler,
+  Keyboard,
+  KeyboardAvoidingView,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import Button from '../../../components/Button';
+import HeaderBackButton from '../../../components/HeaderBackButton';
+import Input from '../../../components/Input';
+import Spacer from '../../../components/Spacer';
+
+import { COLOURS } from '../../../constants/colours';
+
+const GRADIENT_THRESHOLD = 24;
+
+export default function EditDisplayName() {
+  const [displayName, setDisplayName] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const headerGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => backHandler.remove();
+  }, []);
+
+  useEffect(() => {
+    const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = e.nativeEvent.contentOffset.y;
+    const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
+    headerGradientOpacity.setValue(headerValue);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={styles.topBar}>
+        <HeaderBackButton iconName="chevron-left" />
+      </View>
+
+      <Animated.View
+        style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={['rgba(134,133,133,0.35)', 'rgba(102,102,102,0)']}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.content}>
+            <Text style={styles.heading}>Change display name</Text>
+
+            <Spacer size="small" />
+
+            <Text style={styles.body}>
+              Enter the display name you’d like to use for your account.
+            </Text>
+
+            <Spacer size="large" />
+
+            <Text style={styles.label}>New display name</Text>
+
+            <Input value={displayName} onChangeText={setDisplayName} placeholder="Example Name" />
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Button title="Save changes" onPress={() => {}} />
+        </View>
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLOURS.white },
+  topBar: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    backgroundColor: COLOURS.white,
+  },
+  headerGradientWrapper: { height: 6 },
+  scrollContent: { flexGrow: 1, paddingBottom: 100 },
+  content: { marginHorizontal: 20 },
+  heading: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: COLOURS.black,
+  },
+  body: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    color: COLOURS.gray[700],
+  },
+  label: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: COLOURS.white,
+  },
+});

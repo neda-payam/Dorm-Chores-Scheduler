@@ -16,16 +16,19 @@ import {
 } from 'react-native';
 
 import { FontAwesome5 } from '@expo/vector-icons';
+import ActionPillButton from '../../../components/ActionPillButton';
 import AvailabilityBadge from '../../../components/AvailabilityBadge';
-import BlockButton from '../../../components/BlockButton';
-import InfoPanel from '../../../components/InfoPanel';
+import FilterChip from '../../../components/FilterChip';
 import InlineButton from '../../../components/InlineButton';
-import InlineNotification from '../../../components/InlineNotification';
 import ListItem from '../../../components/ListItem';
 import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
+import SortDropdown from '../../../components/SortDropdown';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+
+const FILTER_OPTIONS = ['All', 'Mine', 'Recurring', 'Completed'];
+const SORT_OPTIONS = ['Due Date', 'Alphabetical', 'Date Created'];
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -54,81 +57,59 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
-const GRADIENT_THRESHOLD = 24;
-
-type IconName = keyof typeof FontAwesome5.glyphMap;
-
-const TODAY_TASKS: {
+type ChoreSummary = {
   id: string;
   title: string;
+  iconName: keyof typeof FontAwesome5.glyphMap;
   subtitle: string;
-  iconName: IconName;
   overdue: boolean;
-}[] = [
+};
+
+const CHORES: ChoreSummary[] = [
   {
     id: '1',
     title: 'Take out the bins',
+    iconName: 'trash',
     subtitle: 'You - Due 1 hour ago',
-    iconName: 'trash' as IconName,
     overdue: true,
   },
   {
     id: '2',
-    title: 'Tidy the corridor',
-    subtitle: 'You - Due in 1 hour',
-    iconName: 'house-user' as IconName,
+    title: 'Clean the common room',
+    iconName: 'broom',
+    subtitle: 'You - Due in 3 days',
     overdue: false,
   },
   {
     id: '3',
-    title: 'Clean the kitchen area',
+    title: 'Tidy the hallway',
+    iconName: 'house-user',
     subtitle: 'Person 2 - Due 6 years ago',
-    iconName: 'utensils' as IconName,
     overdue: true,
   },
   {
     id: '4',
-    title: 'Mop the floor',
-    subtitle: 'Person 3 - Due in 5 hours',
-    iconName: 'broom' as IconName,
+    title: 'Mop the kitchen',
+    iconName: 'broom',
+    subtitle: 'Person 2 - Due in 6 days',
     overdue: false,
   },
   {
     id: '5',
-    title: 'Hoover the floors',
-    subtitle: 'Person 4 - Due in 8 hours',
-    iconName: 'wind' as IconName,
+    title: 'Clean the bathrooms',
+    iconName: 'toilet',
+    subtitle: 'Person 3 - Due in 1 week',
     overdue: false,
   },
 ];
 
-const OPEN_REPAIRS: {
-  id: string;
-  title: string;
-  subtitle: string;
-  iconName: IconName;
-  status?: {
-    label: string;
-    backgroundColor: string;
-    textColor: string;
-  };
-}[] = [
-  {
-    id: '1',
-    title: 'Fix broken sink',
-    subtitle: 'Created by Person 2 - 20/02/2026',
-    iconName: 'faucet' as IconName,
-    status: {
-      label: 'In Progress',
-      backgroundColor: '#FFF7D3',
-      textColor: 'rgba(0, 0, 0, 0.65)',
-    },
-  },
-];
+const GRADIENT_THRESHOLD = 24;
 
-export default function Home() {
+export default function Chores() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('Due Date');
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -180,8 +161,7 @@ export default function Home() {
     ...item,
   }));
 
-  const noChores = TODAY_TASKS.length === 0;
-  const noRepairs = OPEN_REPAIRS.length === 0;
+  const isEmpty = CHORES.length === 0;
 
   return (
     <View style={styles.container}>
@@ -229,42 +209,60 @@ export default function Home() {
           }}
         >
           <View style={styles.content}>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>Today</Text>
-              <InlineNotification
-                type="info"
-                text="Showing top 5 due tasks"
-                style={styles.inlineNotification}
-              />
-            </View>
+            <Text style={styles.title}>Chores</Text>
 
-            <Spacer size="medium" />
+            {isEmpty ? (
+              <>
+                <Spacer size="large" />
 
-            {noChores ? (
-              <View style={styles.emptyCard}>
-                <View style={styles.emptyIconWrapper}>
-                  <FontAwesome5 name="check" size={40} color={COLOURS.black} />
+                <View style={styles.completed}>
+                  <View style={styles.iconWrapper}>
+                    <FontAwesome5 name="check" size={40} color={COLOURS.black} />
+                  </View>
+
+                  <Text style={styles.completedTitle}>All chores complete</Text>
+
+                  <Text style={styles.completedSubtitle}>
+                    Something need doing?{' '}
+                    <InlineButton
+                      title="Create new chore"
+                      onPress={() => router.push('/main/student/create-chore')}
+                    />
+                  </Text>
                 </View>
-                <Text style={styles.emptyTitle}>All chores complete</Text>
-                <Text style={styles.emptySubtitle}>
-                  Something need doing?{' '}
-                  <InlineButton
-                    title="Create new chore"
-                    onPress={() => router.push('/main/student/create-chore')}
-                  />
-                </Text>
-              </View>
+              </>
             ) : (
-              <View>
-                {TODAY_TASKS.map((task, index) => (
-                  <View key={task.id}>
+              <>
+                <Spacer size="medium" />
+
+                <View style={styles.chipRow}>
+                  {FILTER_OPTIONS.map((option) => (
+                    <FilterChip
+                      key={option}
+                      label={option}
+                      active={activeFilter === option}
+                      onPress={() => setActiveFilter(option)}
+                    />
+                  ))}
+                </View>
+
+                <Spacer size="small" />
+
+                <View style={styles.chipRow}>
+                  <SortDropdown options={SORT_OPTIONS} selected={sortBy} onSelect={setSortBy} />
+                </View>
+
+                <Spacer size="medium" />
+
+                {CHORES.map((chore, index) => (
+                  <View key={chore.id}>
                     <ListItem
-                      title={task.title}
-                      subtitle={task.subtitle}
-                      iconName={task.iconName}
+                      title={chore.title}
+                      iconName={chore.iconName}
+                      subtitle={chore.subtitle}
                       onPress={() => router.push(`/main/student/view-chore`)}
                       statusChip={
-                        task.overdue
+                        chore.overdue
                           ? {
                               label: 'Overdue',
                               backgroundColor: '#FFE9EA',
@@ -273,99 +271,26 @@ export default function Home() {
                           : undefined
                       }
                     />
-                    {index < TODAY_TASKS.length - 1 ? <Spacer size="small" /> : null}
+
+                    {/* Spacer between items (not after last) */}
+                    {index < CHORES.length - 1 && <Spacer size="small" />}
                   </View>
                 ))}
-              </View>
+              </>
             )}
-
-            <View style={[styles.inlineAction, styles.inlineActionLarge]}>
-              <InlineButton
-                title="View all chores"
-                onPress={() => router.push('/main/student/chores')}
-              />
-            </View>
-
-            <Spacer size="large" />
-
-            <Text style={styles.title}>This week</Text>
-            <Spacer size="small" />
-            <View style={styles.infoPanelGrid}>
-              <InfoPanel label="Total chores" value="12" />
-              <InfoPanel label="Completed" value="85%" />
-              <InfoPanel label="Overdue" value="2" />
-              <InfoPanel label="Open repairs" value="1" />
-            </View>
-
-            <Spacer size="large" />
-
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>Open repairs</Text>
-              <InlineNotification
-                type="info"
-                text="Showing max 3"
-                style={styles.inlineNotification}
-              />
-            </View>
-
-            <Spacer size="medium" />
-
-            {noRepairs ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>No repairs found</Text>
-                <Text style={styles.emptySubtitle}>
-                  Something need repaired?{' '}
-                  <InlineButton
-                    title="Request repair"
-                    onPress={() => router.push('/main/student/request-repair')}
-                  />
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {OPEN_REPAIRS.map((repair, index) => (
-                  <View key={repair.id}>
-                    <ListItem
-                      title={repair.title}
-                      subtitle={repair.subtitle}
-                      iconName={repair.iconName}
-                      onPress={() => router.push(`/main/student/view-repair`)}
-                      statusChip={repair.status}
-                    />
-                    {index < OPEN_REPAIRS.length - 1 ? <Spacer size="small" /> : null}
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <View style={[styles.inlineAction, styles.inlineActionLarge]}>
-              <InlineButton
-                title="View all repairs"
-                onPress={() => router.push('/main/student/repairs')}
-              />
-            </View>
-
-            <Spacer size="large" />
-
-            <Text style={styles.title}>Quick actions</Text>
-            <Spacer size="small" />
-            <View style={styles.quickActionsRow}>
-              <BlockButton
-                title="Create Chore"
-                iconName="plus"
-                onPress={() => router.push('/main/student/create-chore')}
-              />
-              <BlockButton
-                title="Request Repair"
-                iconName="wrench"
-                onPress={() => router.push('/main/student/request-repair')}
-              />
-            </View>
 
             <Spacer size="large" />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <View style={styles.newChoreButtonWrapper}>
+        <ActionPillButton
+          title="New Chore"
+          iconName="plus"
+          onPress={() => router.push('/main/student/create-chore')}
+        />
+      </View>
 
       {/* White panel behind navbar to prevent see-through */}
       <View style={styles.navBarBackground} pointerEvents="none" />
@@ -388,7 +313,7 @@ export default function Home() {
       {/* Static navbar */}
       <NavBar
         items={items as [NavBarItem, NavBarItem, ...NavBarItem[]]}
-        activeKey={'home'}
+        activeKey={'chores'}
         style={styles.navBar}
       />
     </View>
@@ -428,59 +353,21 @@ const styles = StyleSheet.create({
   content: {
     marginHorizontal: 20,
   },
-  title: {
+  heading: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
     color: COLOURS.black,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  inlineNotification: {
-    flexShrink: 1,
-    flexGrow: 0,
-  },
-  inlineAction: {
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  inlineActionLarge: {
-    marginTop: 16,
-  },
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  infoPanelGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyIconWrapper: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    marginTop: 8,
+  sectionTitle: {
     fontFamily: 'Inter-Bold',
-    fontSize: 24,
+    fontSize: 22,
     color: COLOURS.black,
-    textAlign: 'center',
   },
-  emptySubtitle: {
+  body: {
     fontFamily: 'Inter',
-    fontSize: 14,
+    fontSize: 16,
     color: COLOURS.gray[700],
-    textAlign: 'center',
+    lineHeight: 24,
   },
   navGradientWrapper: {
     position: 'absolute',
@@ -505,5 +392,46 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 2,
+  },
+  title: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: COLOURS.black,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  newChoreButtonWrapper: {
+    position: 'absolute',
+    right: 16,
+    bottom: 112,
+    zIndex: 4,
+  },
+  completed: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedTitle: {
+    marginTop: 8,
+    fontFamily: 'Inter-Bold',
+    fontSize: 24,
+    color: COLOURS.black,
+    textAlign: 'center',
+  },
+  completedSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: COLOURS.gray[700],
+    textAlign: 'center',
   },
 });

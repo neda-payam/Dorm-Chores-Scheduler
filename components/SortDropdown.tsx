@@ -2,7 +2,7 @@
  * @file SortDropdown.tsx
  * @description A pill-shaped sort/dropdown chip that displays the current sort option
  *              with a FontAwesome5 chevron-down icon. Matches the FilterChip visual style
- *              (inactive state) — transparent background, grey inner border, dark green text.
+ *              (inactive state) - transparent background, grey inner border, dark green text.
  *              Opens a modal dropdown with a list of sort options.
  *
  * @usage

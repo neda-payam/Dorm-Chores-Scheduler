@@ -97,7 +97,7 @@ export default function ProfilePicture({
       return;
     }
 
-    // 4. Simulate upload — replace this block with real upload logic
+    // 4. Simulate upload - replace this block with real upload logic
     simulateUpload(asset.uri);
   };
 
@@ -126,7 +126,7 @@ export default function ProfilePicture({
           [{ text: 'OK' }],
         ),
       () => {
-        // Success path — passes URI back to parent for optimistic UI update
+        // Success path - passes URI back to parent for optimistic UI update
         onImageChange?.(uri);
         Alert.alert('Profile Picture Updated', 'Your new profile picture has been saved.', [
           { text: 'Great!' },
