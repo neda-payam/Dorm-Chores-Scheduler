@@ -9,3 +9,5 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Components: components.md
+  - Validation: validation.md
+  - Pages & Authentication: pages-authentication.md
