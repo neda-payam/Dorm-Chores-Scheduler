@@ -30,7 +30,7 @@ const GRADIENT_THRESHOLD = 24;
 export default function EditDisplayName() {
   const [displayName, setDisplayName] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [, setKeyboardVisible] = useState(false);
   const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 

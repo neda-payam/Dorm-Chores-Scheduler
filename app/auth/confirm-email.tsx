@@ -75,7 +75,7 @@ export default function ConfirmEmail() {
         return;
       }
 
-      const { error, data } = await supabase.auth.verifyOtp({
+      const { error } = await supabase.auth.verifyOtp({
         email: emailValue,
         token: cleanedCode,
         type: 'signup',
