@@ -19,6 +19,7 @@ import InputCode from '../../components/InputCode';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
+import { formatErrorMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 import { normaliseEmail, validateNoSqlInjection, validateRequired } from '../../lib/validation';
 
@@ -64,43 +65,48 @@ export default function ConfirmEmail() {
 
     const emailValue = typeof email === 'string' ? normaliseEmail(email) : '';
 
-    const codeRequired = validateRequired(cleanedCode, 'Confirmation code');
-    if (!codeRequired.isValid) {
-      setCodeError(codeRequired.error ?? 'Confirmation code is required.');
-      return;
+    try {
+      validateRequired(cleanedCode, 'Confirmation code');
+      validateNoSqlInjection(cleanedCode, 'Confirmation code');
+
+      const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
+      if (!codeFormatCheck) {
+        setCodeError('Confirmation code must be a 6-digit number.');
+        return;
+      }
+
+      const { error, data } = await supabase.auth.verifyOtp({
+        email: emailValue,
+        token: cleanedCode,
+        type: 'signup',
+      });
+
+      if (error) {
+        setCodeError(formatErrorMessage(error.message));
+        return;
+      }
+
+      setNotice({
+        type: 'success',
+        text: 'Email confirmed successfully. Logging you in...',
+      });
+
+      setTimeout(() => {
+        // By pushing back to index, it will run the session check,
+        // see you are logged in from the verifyOtp session,
+        // and direct you to the correct manager/student dashboard
+        router.replace('/');
+      }, 1500);
+    } catch (err: any) {
+      if (err.name === 'ValidationError') {
+        setCodeError(err.message);
+        return;
+      }
+      setNotice({
+        type: 'error',
+        text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
+      });
     }
-
-    const codeSqlCheck = validateNoSqlInjection(cleanedCode, 'Confirmation code');
-    if (!codeSqlCheck.isValid) {
-      setCodeError(codeSqlCheck.error ?? 'Confirmation code contains invalid characters.');
-      return;
-    }
-
-    const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
-    if (!codeFormatCheck) {
-      setCodeError('Confirmation code must be a 6-digit number.');
-      return;
-    }
-
-    const { error } = await supabase.auth.verifyOtp({
-      email: emailValue,
-      token: cleanedCode,
-      type: 'signup',
-    });
-
-    if (error) {
-      setCodeError(error.message);
-      return;
-    }
-
-    setNotice({
-      type: 'success',
-      text: 'Email confirmed successfully. Please sign in.',
-    });
-
-    setTimeout(() => {
-      router.push('/auth/signin');
-    }, 1500);
   }, [codeValue, email]);
 
   const handleResend = useCallback(async () => {
@@ -109,23 +115,30 @@ export default function ConfirmEmail() {
 
     const emailValue = typeof email === 'string' ? normaliseEmail(email) : '';
 
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: emailValue,
-    });
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailValue,
+      });
 
-    if (error) {
+      if (error) {
+        setNotice({
+          type: 'error',
+          text: formatErrorMessage(error.message),
+        });
+        return;
+      }
+
+      setNotice({
+        type: 'success',
+        text: 'A new confirmation code has been sent.',
+      });
+    } catch (err: any) {
       setNotice({
         type: 'error',
-        text: error.message,
+        text: err.message ? formatErrorMessage(err.message) : 'Failed to resend confirmation code.',
       });
-      return;
     }
-
-    setNotice({
-      type: 'success',
-      text: 'A new confirmation code has been sent.',
-    });
   }, [email]);
 
   const scrollContent = (

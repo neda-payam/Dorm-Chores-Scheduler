@@ -19,13 +19,9 @@ import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
-import { supabase } from '../../lib/supabase';
-import {
-  normaliseEmail,
-  sanitiseInput,
-  validateDisplayName,
-  validateSignUpFields,
-} from '../../lib/validation';
+import { signUpUser } from '../../lib/auth';
+import { ValidationError, formatErrorMessage } from '../../lib/errors';
+import { normaliseEmail } from '../../lib/validation';
 
 function formatAccountType(type: string | string[]) {
   if (typeof type === 'string') {
@@ -80,31 +76,10 @@ export default function SignUp() {
   const handleSignUp = useCallback(async () => {
     setNotice(null);
 
-    const trimmedDisplayName = sanitiseInput(displayName);
-    const trimmedEmail = normaliseEmail(email);
-
-    if (!trimmedDisplayName || !trimmedEmail || !password || !confirmPassword) {
+    if (!displayName || !email || !password || !confirmPassword) {
       setNotice({
         type: 'error',
         text: 'Please fill in all fields.',
-      });
-      return;
-    }
-
-    const displayNameResult = validateDisplayName(trimmedDisplayName);
-    if (!displayNameResult.isValid) {
-      setNotice({
-        type: 'error',
-        text: displayNameResult.error || 'Invalid display name.',
-      });
-      return;
-    }
-
-    const signUpValidationResult = validateSignUpFields(trimmedEmail, password);
-    if (!signUpValidationResult.isValid) {
-      setNotice({
-        type: 'error',
-        text: signUpValidationResult.error || 'Invalid sign up details.',
       });
       return;
     }
@@ -117,56 +92,31 @@ export default function SignUp() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        data: {
-          display_name: trimmedDisplayName,
-        },
-      },
-    });
+    const selectedAccountType =
+      typeof accountType === 'string' ? accountType : (accountType?.[0] ?? '');
 
-    console.log('AFTER signUp:', { data, error });
+    try {
+      await signUpUser(email, password, displayName, selectedAccountType);
 
-    if (error) {
       setNotice({
-        type: 'error',
-        text: error.message,
+        type: 'info',
+        text: 'Account created. Please check your email to confirm your account.',
       });
-      return;
-    }
-    const userId = data.user?.id;
 
-    if (userId) {
-      const selectedAccountType =
-        typeof accountType === 'string' ? accountType : (accountType?.[0] ?? '');
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          is_manager: selectedAccountType === 'manager',
-        })
-        .eq('id', userId);
-
-      if (profileError) {
+      router.push({
+        pathname: '/auth/confirm-email',
+        params: { email: normaliseEmail(email), accountType },
+      });
+    } catch (err: any) {
+      if (err instanceof ValidationError) {
+        setNotice({ type: 'error', text: err.message });
+      } else {
         setNotice({
           type: 'error',
-          text: profileError.message,
+          text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
         });
-        return;
       }
     }
-
-    setNotice({
-      type: 'info',
-      text: 'Account created. Please check your email to confirm your account.',
-    });
-
-    router.push({
-      pathname: '/auth/confirm-email',
-      params: { email: trimmedEmail, accountType },
-    });
   }, [accountType, displayName, email, password, confirmPassword]);
 
   const scrollContent = (

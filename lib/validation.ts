@@ -1,10 +1,6 @@
 // Validation utility functions for form inputs with SQL injection protection
 
-export type ValidationResult = {
-  isValid: boolean;
-  error?: string;
-};
-
+import { ValidationError } from './errors';
 // Check if a value is blank (empty, null, undefined, or whitespace only)
 export function isBlank(value: string | null | undefined): boolean {
   return value === null || value === undefined || value.trim() === '';
@@ -54,103 +50,98 @@ export function sanitiseInput(value: string): string {
 }
 
 // Validate that a field is not blank (required field check)
-export function validateRequired(value: string, fieldName: string): ValidationResult {
+export function validateRequired(value: string, fieldName: string): void {
   if (isBlank(value)) {
-    return { isValid: false, error: `${fieldName} is required.` };
+    throw new ValidationError(`${fieldName} is required.`);
   }
-  return { isValid: true };
+  return;
 }
 
 // Validate input does not contain SQL injection patterns
-export function validateNoSqlInjection(value: string, fieldName: string): ValidationResult {
+export function validateNoSqlInjection(value: string, fieldName: string): void {
   if (containsSqlInjection(value)) {
-    return { isValid: false, error: `${fieldName} contains invalid characters.` };
+    throw new ValidationError(`${fieldName} contains invalid characters.`);
   }
-  return { isValid: true };
+  return;
 }
 
 // Validate display name:
 // - 3-32 characters, letters and spaces only, no numbers/special chars
 // - Must pass SQL injection check
-export function validateDisplayName(value: string): ValidationResult {
+export function validateDisplayName(value: string): void {
   // Check if blank first
-  const requiredCheck = validateRequired(value, 'Display name');
-  if (!requiredCheck.isValid) return requiredCheck;
+  validateRequired(value, 'Display name');
 
   // SQL injection check
-  const sqlCheck = validateNoSqlInjection(value, 'Display name');
-  if (!sqlCheck.isValid) return sqlCheck;
+  validateNoSqlInjection(value, 'Display name');
 
   const trimmedValue = trimInput(value);
 
   // Length check
   if (trimmedValue.length < 3) {
-    return { isValid: false, error: 'Display name must be at least 3 characters.' };
+    throw new ValidationError('Display name must be at least 3 characters.');
   }
   if (trimmedValue.length > 32) {
-    return { isValid: false, error: 'Display name must be no more than 32 characters.' };
+    throw new ValidationError('Display name must be no more than 32 characters.');
   }
 
   // Letters and spaces only (no numbers or special characters)
   const lettersAndSpacesOnly = /^[a-zA-Z\s]+$/;
   if (!lettersAndSpacesOnly.test(trimmedValue)) {
-    return {
-      isValid: false,
-      error: 'Display name must contain letters only (no numbers or special characters).',
-    };
+    throw new ValidationError(
+      'Display name must contain letters only (no numbers or special characters).',
+    );
   }
 
-  return { isValid: true };
+  return;
 }
 
 // Validate email address:
 // - 5-254 characters, exactly one "@", at least one "." after "@"
 // - No spaces, valid email format (e.g., example@domain.com)
 // - Must pass SQL injection check
-export function validateEmail(value: string): ValidationResult {
+export function validateEmail(value: string): void {
   // Check if blank first
-  const requiredCheck = validateRequired(value, 'Email address');
-  if (!requiredCheck.isValid) return requiredCheck;
+  validateRequired(value, 'Email address');
 
   // SQL injection check
-  const sqlCheck = validateNoSqlInjection(value, 'Email address');
-  if (!sqlCheck.isValid) return sqlCheck;
+  validateNoSqlInjection(value, 'Email address');
 
   const trimmedValue = trimInput(value);
 
   // No spaces allowed
   if (/\s/.test(trimmedValue)) {
-    return { isValid: false, error: 'Email address cannot contain spaces.' };
+    throw new ValidationError('Email address cannot contain spaces.');
   }
 
   // Length check
   if (trimmedValue.length < 5) {
-    return { isValid: false, error: 'Email address must be at least 5 characters.' };
+    throw new ValidationError('Email address must be at least 5 characters.');
   }
   if (trimmedValue.length > 254) {
-    return { isValid: false, error: 'Email address must be no more than 254 characters.' };
+    throw new ValidationError('Email address must be no more than 254 characters.');
   }
 
   // Must contain exactly one "@"
   const atCount = (trimmedValue.match(/@/g) || []).length;
   if (atCount !== 1) {
-    return { isValid: false, error: 'Email address must contain exactly one "@" symbol.' };
+    throw new ValidationError('Email address must contain exactly one "@" symbol.');
   }
 
   // Must have at least one "." after "@"
   const atIndex = trimmedValue.indexOf('@');
   const domainPart = trimmedValue.substring(atIndex + 1);
   if (!domainPart.includes('.')) {
-    return { isValid: false, error: 'Email address must contain a "." after the "@" symbol.' };
+    throw new ValidationError('Email address must contain a "." after the "@" symbol.');
   }
 
   // Valid email format check
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(trimmedValue)) {
-    return { isValid: false, error: 'Please enter a valid email address.' };
+    throw new ValidationError('Please enter a valid email address.');
   }
 
-  return { isValid: true };
+  return;
 }
 
 // Normalise email for storage (trim and lowercase)
@@ -162,73 +153,67 @@ export function normaliseEmail(value: string): string {
 // - 6-100 characters
 // - Must contain: 1 uppercase, 1 lowercase, 1 number, 1 symbol
 // - Must pass SQL injection check
-export function validatePassword(value: string): ValidationResult {
+export function validatePassword(value: string): void {
   // Check if blank first
-  const requiredCheck = validateRequired(value, 'Password');
-  if (!requiredCheck.isValid) return requiredCheck;
+  validateRequired(value, 'Password');
 
   // SQL injection check
-  const sqlCheck = validateNoSqlInjection(value, 'Password');
-  if (!sqlCheck.isValid) return sqlCheck;
+  validateNoSqlInjection(value, 'Password');
 
   // Length check
   if (value.length < 6) {
-    return { isValid: false, error: 'Password must be at least 6 characters.' };
+    throw new ValidationError('Password must be at least 6 characters.');
   }
   if (value.length > 100) {
-    return { isValid: false, error: 'Password must be no more than 100 characters.' };
+    throw new ValidationError('Password must be no more than 100 characters.');
   }
 
   // Must contain at least 1 uppercase letter
   if (!/[A-Z]/.test(value)) {
-    return { isValid: false, error: 'Password must contain at least 1 uppercase letter.' };
+    throw new ValidationError('Password must contain at least 1 uppercase letter.');
   }
 
   // Must contain at least 1 lowercase letter
   if (!/[a-z]/.test(value)) {
-    return { isValid: false, error: 'Password must contain at least 1 lowercase letter.' };
+    throw new ValidationError('Password must contain at least 1 lowercase letter.');
   }
 
   // Must contain at least 1 number
   if (!/[0-9]/.test(value)) {
-    return { isValid: false, error: 'Password must contain at least 1 number.' };
+    throw new ValidationError('Password must contain at least 1 number.');
   }
 
   // Must contain at least 1 symbol
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(value)) {
-    return { isValid: false, error: 'Password must contain at least 1 symbol.' };
+    throw new ValidationError('Password must contain at least 1 symbol.');
   }
 
-  return { isValid: true };
+  return;
 }
 
 // Validate sign-in fields (email validation + password required check)
-export function validateSignInFields(email: string, password: string): ValidationResult {
+export function validateSignInFields(email: string, password: string): void {
   // Email validation
-  const emailResult = validateEmail(email);
-  if (!emailResult.isValid) return emailResult;
+  validateEmail(email);
 
   // Password required check only for sign-in (not full validation)
-  const passwordRequired = validateRequired(password, 'Password');
-  if (!passwordRequired.isValid) return passwordRequired;
+  validateRequired(password, 'Password');
 
-  return { isValid: true };
+  return;
 }
 
 // Validate sign-up fields (email + full password validation)
-export function validateSignUpFields(email: string, password: string): ValidationResult {
+export function validateSignUpFields(email: string, password: string): void {
   // Email validation
-  const emailResult = validateEmail(email);
-  if (!emailResult.isValid) return emailResult;
+  validateEmail(email);
 
   // Full password validation for sign-up
-  const passwordResult = validatePassword(password);
-  if (!passwordResult.isValid) return passwordResult;
+  validatePassword(password);
 
-  return { isValid: true };
+  return;
 }
 
 // Validate password reset fields (email only)
-export function validateResetPasswordFields(email: string): ValidationResult {
-  return validateEmail(email);
+export function validateResetPasswordFields(email: string): void {
+  validateEmail(email);
 }

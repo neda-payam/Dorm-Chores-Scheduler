@@ -95,7 +95,9 @@ export default function ListItem({
         {/* Text content area (title and optional subtitle) */}
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+              {title}
+            </Text>
             {statusChip && (
               <View style={[styles.statusChip, { backgroundColor: statusChip.backgroundColor }]}>
                 <Text style={[styles.statusChipText, { color: statusChip.textColor }]}>
@@ -105,7 +107,11 @@ export default function ListItem({
             )}
           </View>
 
-          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          {subtitle && (
+            <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+              {subtitle}
+            </Text>
+          )}
         </View>
 
         {/* Navigation chevron indicator */}
@@ -148,12 +154,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
+    flexShrink: 1,
     fontFamily: 'Inter-Bold',
     fontSize: 14,
     color: COLOURS.black,
     lineHeight: 16,
   },
   subtitle: {
+    flexShrink: 1,
     fontFamily: 'Inter',
     fontSize: 12,
     color: COLOURS.black,

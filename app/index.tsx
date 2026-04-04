@@ -1,65 +1,49 @@
-import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
-import { COLOURS } from '../constants/colours';
+import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { getCurrentUser, isAuthenticated } from '../lib/auth';
 
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dorm Chores Scheduler</Text>
-      <Text style={styles.subtitle}>Edit app/index.tsx to edit this screen.</Text>
+  const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
-      <View style={styles.linksContainer}>
-        <Link href="/auth/signin">
-          <Text style={styles.linkText}>Sign In</Text>
-        </Link>
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const isAuth = await isAuthenticated();
+        setAuthed(isAuth);
 
-        <Link href="/ui-tests">
-          <Text style={styles.linkText}>Go to UI Test Page</Text>
-        </Link>
+        if (isAuth) {
+          const user = await getCurrentUser();
+          setRole(user?.role || null);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-        <Link href="/main/manager/dashboard">
-          <Text style={styles.linkText}>Go to Manager Dashboard</Text>
-        </Link>
+    checkAuth();
+  }, []);
 
-        <Link href="/main/student/home">
-          <Text style={styles.linkText}>Go to Student Home</Text>
-        </Link>
-
-        <Link href="/broken">
-          <Text style={styles.linkText}>Sitemap (Intentionally broken)</Text>
-        </Link>
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
       </View>
-    </View>
-  );
-}
+    );
+  }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 24,
-    marginBottom: 10,
-    color: COLOURS.gray[800],
-  },
-  subtitle: {
-    fontFamily: 'Inter',
-    fontSize: 16,
-    color: COLOURS.gray[700],
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  linksContainer: {
-    gap: 16,
-  },
-  linkText: {
-    fontFamily: 'Inter-SemiBold',
-    color: COLOURS.gray[800],
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
+  if (!authed) {
+    return <Redirect href="/auth/signin" />;
+  }
+
+  if (role === 'manager') {
+    return <Redirect href="/main/manager/dashboard" />;
+  }
+
+  // Default to student home for students or unknown roles
+  return <Redirect href="/main/student/home" />;
+}

@@ -17,18 +17,39 @@ import {
 
 import Button from '../../../components/Button';
 import HeaderBackButton from '../../../components/HeaderBackButton';
+import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { getCurrentUser, updateDisplayName } from '../../../lib/auth';
+import { ValidationError, formatErrorMessage } from '../../../lib/errors';
 
 const GRADIENT_THRESHOLD = 24;
 
 export default function EditDisplayName() {
   const [displayName, setDisplayName] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  // Fetch current user so we can prep data / extract ID
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setUserId(user.id);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadData();
+  }, []);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -48,6 +69,32 @@ export default function EditDisplayName() {
     const scrollY = e.nativeEvent.contentOffset.y;
     const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
     headerGradientOpacity.setValue(headerValue);
+  };
+
+  const handleSave = async () => {
+    setNotice(null);
+
+    if (!userId) {
+      setNotice({ type: 'error', text: 'You must be logged in to do this.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await updateDisplayName(userId, displayName);
+      setNotice({ type: 'success', text: 'Display name updated successfully!' });
+    } catch (err: any) {
+      if (err instanceof ValidationError) {
+        setNotice({ type: 'error', text: err.message });
+      } else {
+        setNotice({
+          type: 'error',
+          text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,11 +138,22 @@ export default function EditDisplayName() {
             <Text style={styles.label}>New display name</Text>
 
             <Input value={displayName} onChangeText={setDisplayName} placeholder="Example Name" />
+
+            {notice && (
+              <>
+                <Spacer size="medium" />
+                <InlineNotification type={notice.type} text={notice.text} />
+              </>
+            )}
           </View>
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button title="Save changes" onPress={() => {}} />
+          <Button
+            title={loading ? 'Saving...' : 'Save changes'}
+            onPress={handleSave}
+            disabled={loading}
+          />
         </View>
       </KeyboardAvoidingView>
     </View>
