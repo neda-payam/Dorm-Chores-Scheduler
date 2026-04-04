@@ -90,7 +90,7 @@ export default function ToggleItem({
         useNativeDriver: false,
       }),
     ]).start();
-  }, [value]);
+  }, [value, translateX, backgroundAnim]);
 
   const backgroundColor = backgroundAnim.interpolate({
     inputRange: [0, 1],

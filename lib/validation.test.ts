@@ -13,6 +13,7 @@ import {
   validateSignInFields,
   validateSignUpFields,
 } from './validation';
+import { ValidationError } from './errors';
 
 describe('isBlank', () => {
   test('returns true for null', () => {
@@ -181,195 +182,179 @@ describe('sanitiseInput', () => {
 
 describe('validateRequired', () => {
   test('fails for empty string', () => {
-    const result = validateRequired('', 'Username');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Username is required.');
+    expect(() => validateRequired('', 'Username')).toThrow(
+      new ValidationError('Username is required.'),
+    );
   });
 
   test('fails for whitespace only', () => {
-    const result = validateRequired('   ', 'Username');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Username is required.');
+    expect(() => validateRequired('   ', 'Username')).toThrow(
+      new ValidationError('Username is required.'),
+    );
   });
 
   test('passes for non-empty string', () => {
-    const result = validateRequired('john', 'Username');
-    expect(result.isValid).toBe(true);
-    expect(result.error).toBeUndefined();
+    expect(() => validateRequired('john', 'Username')).not.toThrow();
   });
 
   test('uses provided field name in error', () => {
-    const result = validateRequired('', 'Email address');
-    expect(result.error).toBe('Email address is required.');
+    expect(() => validateRequired('', 'Email address')).toThrow(
+      new ValidationError('Email address is required.'),
+    );
   });
 });
 
 describe('validateNoSqlInjection', () => {
   test('fails for SQL injection attempt', () => {
-    const result = validateNoSqlInjection("' OR 1=1", 'Username');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Username contains invalid characters.');
+    expect(() => validateNoSqlInjection("' OR 1=1", 'Username')).toThrow(
+      new ValidationError('Username contains invalid characters.'),
+    );
   });
 
   test('passes for clean input', () => {
-    const result = validateNoSqlInjection('John Smith', 'Username');
-    expect(result.isValid).toBe(true);
-    expect(result.error).toBeUndefined();
+    expect(() => validateNoSqlInjection('John Smith', 'Username')).not.toThrow();
   });
 });
 
 describe('validateDisplayName', () => {
   // Required check
   test('fails for empty string', () => {
-    const result = validateDisplayName('');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Display name is required.');
+    expect(() => validateDisplayName('')).toThrow(new ValidationError('Display name is required.'));
   });
 
   test('fails for whitespace only', () => {
-    const result = validateDisplayName('   ');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Display name is required.');
+    expect(() => validateDisplayName('   ')).toThrow(
+      new ValidationError('Display name is required.'),
+    );
   });
 
   // SQL injection check
   test('fails for SQL injection attempt', () => {
-    const result = validateDisplayName("'; DROP TABLE users--");
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Display name contains invalid characters.');
+    expect(() => validateDisplayName("'; DROP TABLE users--")).toThrow(
+      new ValidationError('Display name contains invalid characters.'),
+    );
   });
 
   // Length checks
   test('fails for name shorter than 3 characters', () => {
-    const result = validateDisplayName('Ab');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Display name must be at least 3 characters.');
+    expect(() => validateDisplayName('Ab')).toThrow(
+      new ValidationError('Display name must be at least 3 characters.'),
+    );
   });
 
   test('fails for name longer than 32 characters', () => {
-    const result = validateDisplayName('A'.repeat(33));
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Display name must be no more than 32 characters.');
+    expect(() => validateDisplayName('A'.repeat(33))).toThrow(
+      new ValidationError('Display name must be no more than 32 characters.'),
+    );
   });
 
   // Character checks
   test('fails for name with numbers', () => {
-    const result = validateDisplayName('John123');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe(
-      'Display name must contain letters only (no numbers or special characters).',
+    expect(() => validateDisplayName('John123')).toThrow(
+      new ValidationError(
+        'Display name must contain letters only (no numbers or special characters).',
+      ),
     );
   });
 
   test('fails for name with special characters', () => {
-    const result = validateDisplayName('John@Smith');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe(
-      'Display name must contain letters only (no numbers or special characters).',
+    expect(() => validateDisplayName('John@Smith')).toThrow(
+      new ValidationError(
+        'Display name must contain letters only (no numbers or special characters).',
+      ),
     );
   });
 
   // Valid cases
   test('passes for valid name with letters only', () => {
-    const result = validateDisplayName('John');
-    expect(result.isValid).toBe(true);
+    expect(() => validateDisplayName('John')).not.toThrow();
   });
 
   test('passes for valid name with spaces', () => {
-    const result = validateDisplayName('John Smith');
-    expect(result.isValid).toBe(true);
+    expect(() => validateDisplayName('John Smith')).not.toThrow();
   });
 
   test('passes for minimum length (3 chars)', () => {
-    const result = validateDisplayName('Jon');
-    expect(result.isValid).toBe(true);
+    expect(() => validateDisplayName('Jon')).not.toThrow();
   });
 
   test('passes for maximum length (32 chars)', () => {
-    const result = validateDisplayName('A'.repeat(32));
-    expect(result.isValid).toBe(true);
+    expect(() => validateDisplayName('A'.repeat(32))).not.toThrow();
   });
 });
 
 describe('validateEmail', () => {
   // Required check
   test('fails for empty string', () => {
-    const result = validateEmail('');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address is required.');
+    expect(() => validateEmail('')).toThrow(new ValidationError('Email address is required.'));
   });
 
   // SQL injection check
   test('fails for SQL injection attempt', () => {
-    const result = validateEmail("test' OR 1=1@example.com");
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address contains invalid characters.');
+    expect(() => validateEmail("test' OR 1=1@example.com")).toThrow(
+      new ValidationError('Email address contains invalid characters.'),
+    );
   });
 
   // Space check
   test('fails for email with spaces', () => {
-    const result = validateEmail('test @example.com');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address cannot contain spaces.');
+    expect(() => validateEmail('test @example.com')).toThrow(
+      new ValidationError('Email address cannot contain spaces.'),
+    );
   });
 
   // Length checks
   test('fails for email shorter than 5 characters', () => {
-    const result = validateEmail('a@b');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must be at least 5 characters.');
+    expect(() => validateEmail('a@b')).toThrow(
+      new ValidationError('Email address must be at least 5 characters.'),
+    );
   });
 
   test('fails for email longer than 254 characters', () => {
-    const result = validateEmail('a'.repeat(250) + '@b.com');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must be no more than 254 characters.');
+    expect(() => validateEmail('a'.repeat(250) + '@b.com')).toThrow(
+      new ValidationError('Email address must be no more than 254 characters.'),
+    );
   });
 
   // @ symbol checks
   test('fails for email without @', () => {
-    const result = validateEmail('testexample.com');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must contain exactly one "@" symbol.');
+    expect(() => validateEmail('testexample.com')).toThrow(
+      new ValidationError('Email address must contain exactly one "@" symbol.'),
+    );
   });
 
   test('fails for email with multiple @', () => {
-    const result = validateEmail('test@@example.com');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must contain exactly one "@" symbol.');
+    expect(() => validateEmail('test@@example.com')).toThrow(
+      new ValidationError('Email address must contain exactly one "@" symbol.'),
+    );
   });
 
   // Dot after @ check
   test('fails for email without dot after @', () => {
-    const result = validateEmail('test@examplecom');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must contain a "." after the "@" symbol.');
+    expect(() => validateEmail('test@examplecom')).toThrow(
+      new ValidationError('Email address must contain a "." after the "@" symbol.'),
+    );
   });
 
   // Valid cases
   test('passes for valid email', () => {
-    const result = validateEmail('test@example.com');
-    expect(result.isValid).toBe(true);
+    expect(() => validateEmail('test@example.com')).not.toThrow();
   });
 
   test('passes for email with subdomain', () => {
-    const result = validateEmail('test@mail.example.com');
-    expect(result.isValid).toBe(true);
+    expect(() => validateEmail('test@mail.example.com')).not.toThrow();
   });
 
   test('passes for email with plus sign', () => {
-    const result = validateEmail('test+tag@example.com');
-    expect(result.isValid).toBe(true);
+    expect(() => validateEmail('test+tag@example.com')).not.toThrow();
   });
 
   test('passes for email with dots in local part', () => {
-    const result = validateEmail('first.last@example.com');
-    expect(result.isValid).toBe(true);
+    expect(() => validateEmail('first.last@example.com')).not.toThrow();
   });
 
   test('trims whitespace before validation', () => {
-    const result = validateEmail('  test@example.com  ');
-    expect(result.isValid).toBe(true);
+    expect(() => validateEmail('  test@example.com  ')).not.toThrow();
   });
 });
 
@@ -390,148 +375,139 @@ describe('normaliseEmail', () => {
 describe('validatePassword', () => {
   // Required check
   test('fails for empty string', () => {
-    const result = validatePassword('');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password is required.');
+    expect(() => validatePassword('')).toThrow(new ValidationError('Password is required.'));
   });
 
   // SQL injection check
   test('fails for SQL injection attempt', () => {
-    const result = validatePassword("Pass1!' OR 1=1");
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password contains invalid characters.');
+    expect(() => validatePassword("Pass1!' OR 1=1")).toThrow(
+      new ValidationError('Password contains invalid characters.'),
+    );
   });
 
   // Length checks
   test('fails for password shorter than 6 characters', () => {
-    const result = validatePassword('Aa1!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must be at least 6 characters.');
+    expect(() => validatePassword('Aa1!')).toThrow(
+      new ValidationError('Password must be at least 6 characters.'),
+    );
   });
 
   test('fails for password longer than 100 characters', () => {
-    const result = validatePassword('Aa1!' + 'a'.repeat(100));
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must be no more than 100 characters.');
+    expect(() => validatePassword('Aa1!' + 'a'.repeat(100))).toThrow(
+      new ValidationError('Password must be no more than 100 characters.'),
+    );
   });
 
   // Character requirement checks
   test('fails for password without uppercase letter', () => {
-    const result = validatePassword('password1!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must contain at least 1 uppercase letter.');
+    expect(() => validatePassword('password1!')).toThrow(
+      new ValidationError('Password must contain at least 1 uppercase letter.'),
+    );
   });
 
   test('fails for password without lowercase letter', () => {
-    const result = validatePassword('PASSWORD1!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must contain at least 1 lowercase letter.');
+    expect(() => validatePassword('PASSWORD1!')).toThrow(
+      new ValidationError('Password must contain at least 1 lowercase letter.'),
+    );
   });
 
   test('fails for password without number', () => {
-    const result = validatePassword('Password!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must contain at least 1 number.');
+    expect(() => validatePassword('Password!')).toThrow(
+      new ValidationError('Password must contain at least 1 number.'),
+    );
   });
 
   test('fails for password without symbol', () => {
-    const result = validatePassword('Password1');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must contain at least 1 symbol.');
+    expect(() => validatePassword('Password1')).toThrow(
+      new ValidationError('Password must contain at least 1 symbol.'),
+    );
   });
 
   // Valid cases
   test('passes for valid password', () => {
-    const result = validatePassword('Password1!');
-    expect(result.isValid).toBe(true);
+    expect(() => validatePassword('Password1!')).not.toThrow();
   });
 
   test('passes for password with various symbols', () => {
-    expect(validatePassword('Password1@').isValid).toBe(true);
-    expect(validatePassword('Password1#').isValid).toBe(true);
-    expect(validatePassword('Password1$').isValid).toBe(true);
-    expect(validatePassword('Password1%').isValid).toBe(true);
-    expect(validatePassword('Password1^').isValid).toBe(true);
-    expect(validatePassword('Password1&').isValid).toBe(true);
-    expect(validatePassword('Password1*').isValid).toBe(true);
+    expect(() => validatePassword('Password1@')).not.toThrow();
+    expect(() => validatePassword('Password1#')).not.toThrow();
+    expect(() => validatePassword('Password1$')).not.toThrow();
+    expect(() => validatePassword('Password1%')).not.toThrow();
+    expect(() => validatePassword('Password1^')).not.toThrow();
+    expect(() => validatePassword('Password1&')).not.toThrow();
+    expect(() => validatePassword('Password1*')).not.toThrow();
   });
 
   test('passes for minimum length password (6 chars)', () => {
-    const result = validatePassword('Pa1!aa');
-    expect(result.isValid).toBe(true);
+    expect(() => validatePassword('Pa1!aa')).not.toThrow();
   });
 
   test('passes for maximum length password (100 chars)', () => {
-    const result = validatePassword('Aa1!' + 'a'.repeat(96));
-    expect(result.isValid).toBe(true);
+    expect(() => validatePassword('Aa1!' + 'a'.repeat(96))).not.toThrow();
   });
 });
 
 describe('validateSignInFields', () => {
   test('fails for invalid email', () => {
-    const result = validateSignInFields('invalid-email', 'Password1!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must contain exactly one "@" symbol.');
+    expect(() => validateSignInFields('invalid-email', 'Password1!')).toThrow(
+      new ValidationError('Email address must contain exactly one "@" symbol.'),
+    );
   });
 
   test('fails for empty password', () => {
-    const result = validateSignInFields('test@example.com', '');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password is required.');
+    expect(() => validateSignInFields('test@example.com', '')).toThrow(
+      new ValidationError('Password is required.'),
+    );
   });
 
   test('passes with valid email and any non-empty password', () => {
     // Sign-in only requires password to be present, not fully validated
-    const result = validateSignInFields('test@example.com', 'weak');
-    expect(result.isValid).toBe(true);
+    expect(() => validateSignInFields('test@example.com', 'weak')).not.toThrow();
   });
 
   test('passes with valid credentials', () => {
-    const result = validateSignInFields('test@example.com', 'Password1!');
-    expect(result.isValid).toBe(true);
+    expect(() => validateSignInFields('test@example.com', 'Password1!')).not.toThrow();
   });
 });
 
 describe('validateSignUpFields', () => {
   test('fails for invalid email', () => {
-    const result = validateSignUpFields('invalid-email', 'Password1!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must contain exactly one "@" symbol.');
+    expect(() => validateSignUpFields('invalid-email', 'Password1!')).toThrow(
+      new ValidationError('Email address must contain exactly one "@" symbol.'),
+    );
   });
 
   test('fails for weak password (no uppercase)', () => {
-    const result = validateSignUpFields('test@example.com', 'password1!');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must contain at least 1 uppercase letter.');
+    expect(() => validateSignUpFields('test@example.com', 'password1!')).toThrow(
+      new ValidationError('Password must contain at least 1 uppercase letter.'),
+    );
   });
 
   test('fails for weak password (no symbol)', () => {
-    const result = validateSignUpFields('test@example.com', 'Password1');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Password must contain at least 1 symbol.');
+    expect(() => validateSignUpFields('test@example.com', 'Password1')).toThrow(
+      new ValidationError('Password must contain at least 1 symbol.'),
+    );
   });
 
   test('passes with valid email and strong password', () => {
-    const result = validateSignUpFields('test@example.com', 'Password1!');
-    expect(result.isValid).toBe(true);
+    expect(() => validateSignUpFields('test@example.com', 'Password1!')).not.toThrow();
   });
 });
 
 describe('validateResetPasswordFields', () => {
   test('fails for empty email', () => {
-    const result = validateResetPasswordFields('');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address is required.');
+    expect(() => validateResetPasswordFields('')).toThrow(
+      new ValidationError('Email address is required.'),
+    );
   });
 
   test('fails for invalid email', () => {
-    const result = validateResetPasswordFields('invalid-email');
-    expect(result.isValid).toBe(false);
-    expect(result.error).toBe('Email address must contain exactly one "@" symbol.');
+    expect(() => validateResetPasswordFields('invalid-email')).toThrow(
+      new ValidationError('Email address must contain exactly one "@" symbol.'),
+    );
   });
 
   test('passes for valid email', () => {
-    const result = validateResetPasswordFields('test@example.com');
-    expect(result.isValid).toBe(true);
+    expect(() => validateResetPasswordFields('test@example.com')).not.toThrow();
   });
 });

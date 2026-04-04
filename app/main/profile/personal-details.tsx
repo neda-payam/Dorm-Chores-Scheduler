@@ -20,13 +20,42 @@ import HeaderBackButton from '../../../components/HeaderBackButton';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { getCurrentUser } from '../../../lib/auth';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
 export default function PersonalDetails() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  // Retrieve existing user credentials
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setEmail(user.email || '');
+
+          const { data } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', user.id)
+            .single();
+
+          if (data) {
+            setDisplayName(data.display_name || 'Anonymous');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadData();
+  }, []);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -93,7 +122,7 @@ export default function PersonalDetails() {
 
             <ListItem
               title="Display name"
-              subtitle="Your Name"
+              subtitle={displayName || 'Loading...'}
               iconName="signature"
               onPress={() => router.push('/main/profile/edit-display-name')}
             />
@@ -102,7 +131,7 @@ export default function PersonalDetails() {
 
             <ListItem
               title="Email address"
-              subtitle="your@email.com"
+              subtitle={email || 'Loading...'}
               iconName="envelope"
               onPress={() => router.push('/main/profile/edit-email')}
             />

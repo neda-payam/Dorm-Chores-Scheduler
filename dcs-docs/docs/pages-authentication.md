@@ -29,14 +29,17 @@ Based on the current project structure, the confirmed pages include:
 **File:** `app/_layout.tsx`
 
 ### Purpose
+
 Defines the root navigation layout for the application.
 
 ### Behaviour
+
 - Loads Inter font families using `@expo-google-fonts/inter`
 - Prevents the splash screen from hiding until fonts finish loading
 - Returns the root `Stack` for navigation
 
 ### Importance
+
 This file is the entry point for shared layout behaviour across all routes.
 
 ---
@@ -46,15 +49,19 @@ This file is the entry point for shared layout behaviour across all routes.
 **File:** `app/index.tsx`
 
 ### Purpose
+
 Provides the initial landing page for the project.
 
 ### Behaviour
+
 - Displays the app title
 - Includes a link to the sign-in page
 - Includes a link to the UI test page
 
 ### Navigation
+
 From this page, users can move to:
+
 - `/auth/signin`
 - `/ui-tests`
 
@@ -65,9 +72,11 @@ From this page, users can move to:
 **File:** `app/auth/signin.tsx`
 
 ### Purpose
+
 Provides the current authentication screen for users to sign in.
 
 ### Components Used
+
 - `CurvedBanner`
 - `Spacer`
 - `Input`
@@ -75,6 +84,7 @@ Provides the current authentication screen for users to sign in.
 - `Button`
 
 ### Behaviour
+
 - Stores `email` and `password` in local state
 - Hides the default stack header
 - Dismisses the keyboard when the user taps outside input fields
@@ -84,6 +94,7 @@ Provides the current authentication screen for users to sign in.
 - Currently logs actions using `handleAction`
 
 ### Authentication Flow
+
 This is the main implemented authentication page in the current codebase.
 
 ---
@@ -93,9 +104,11 @@ This is the main implemented authentication page in the current codebase.
 **Folder:** `app/ui-tests/`
 
 ### Purpose
+
 These pages appear to exist for visual or manual component testing.
 
 ### Confirmed test pages
+
 - `index.tsx`
 - `button-test.tsx`
 - `input-test.tsx`
@@ -105,6 +118,7 @@ These pages appear to exist for visual or manual component testing.
 - `inline-notification-test.tsx`
 
 ### Importance
+
 These pages help contributors check how shared components behave in isolation.
 
 ---
@@ -118,11 +132,13 @@ The project task states that authentication documentation should include:
 - reset password
 
 ### Current implementation note
+
 In the current project copy inspected for documentation, the fully confirmed authentication page is:
 
 - `sign-in`
 
 The sign-in page includes inline actions for:
+
 - reset password
 - sign up
 
@@ -141,6 +157,7 @@ The task description also mentions these main pages:
 - Profile / Settings
 
 ### Current implementation note
+
 These page names are part of the project documentation scope, but they were not all confirmed in the current local project copy that was inspected.
 
 If those pages exist in the GitHub branch you are documenting, add a short section for each page including:
@@ -155,10 +172,12 @@ If those pages exist in the GitHub branch you are documenting, add a short secti
 ## Navigation Relationships
 
 ### Confirmed current navigation
+
 - `app/index.tsx` links to `/auth/signin`
 - `app/index.tsx` links to `/ui-tests`
 
 ### Root navigation
+
 All routes are wrapped by the root stack defined in `app/_layout.tsx`.
 
 ---
@@ -168,6 +187,7 @@ All routes are wrapped by the root stack defined in `app/_layout.tsx`.
 When documenting additional pages, use this format:
 
 ### Page Name
+
 **File:** `app/example.tsx`
 
 **Purpose**  

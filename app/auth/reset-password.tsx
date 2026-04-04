@@ -19,8 +19,8 @@ import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
-import { supabase } from '../../lib/supabase';
-import { normaliseEmail, validateNoSqlInjection, validateRequired } from '../../lib/validation';
+import { resetPassword } from '../../lib/auth';
+import { ValidationError, formatErrorMessage } from '../../lib/errors';
 
 export default function ResetPassword() {
   const [email, setEmail] = useState('');
@@ -62,36 +62,28 @@ export default function ResetPassword() {
   const handleReset = useCallback(async () => {
     clearErrors();
 
-    const emailRequired = validateRequired(email, 'Email address');
-    if (!emailRequired.isValid) {
-      setEmailError(emailRequired.error!);
-      return;
+    try {
+      await resetPassword(email);
+
+      setNotice({
+        type: 'info',
+        text: 'If an account exists for this email, a reset code has been sent.',
+      });
+
+      router.push({
+        pathname: '/auth/change-password',
+        params: { email }, // Note: the email format normalization is handled inside resetPassword, we can just pass the original or let change-password handle it
+      });
+    } catch (err: any) {
+      if (err instanceof ValidationError) {
+        setEmailError(err.message);
+      } else {
+        setNotice({
+          type: 'error',
+          text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
+        });
+      }
     }
-
-    const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
-    if (!emailSqlCheck.isValid) {
-      setEmailError(emailSqlCheck.error!);
-      return;
-    }
-
-    const normalisedEmail = normaliseEmail(email);
-
-    const { error } = await supabase.auth.resetPasswordForEmail(normalisedEmail);
-
-    if (error) {
-      setNotice({ type: 'error', text: error.message });
-      return;
-    }
-
-    setNotice({
-      type: 'info',
-      text: 'If an account exists for this email, a reset code has been sent.',
-    });
-
-    router.push({
-      pathname: '/auth/change-password',
-      params: { email: normalisedEmail },
-    });
   }, [email]);
 
   const scrollContent = (
