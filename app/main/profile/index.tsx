@@ -3,7 +3,6 @@ import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -60,11 +59,6 @@ export default function Profile() {
   }, []);
 
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
-
-  useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
 
@@ -84,7 +78,9 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       <View style={styles.topBar}>
         <HeaderBackButton iconName="times" />

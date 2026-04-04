@@ -3,7 +3,6 @@ import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -27,14 +26,10 @@ const GRADIENT_THRESHOLD = 24;
 
 export default function EditEmail() {
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -54,7 +49,9 @@ export default function EditEmail() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       <View style={styles.topBar}>
         <HeaderBackButton iconName="chevron-left" />
@@ -107,11 +104,18 @@ export default function EditEmail() {
             <Text style={styles.inputLabel}>New email address</Text>
             <Input
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(t) => {
+                setEmail(t);
+                setEmailError(null);
+              }}
               placeholder="example@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              hasError={!!emailError}
             />
+            {emailError && (
+              <InlineNotification type="error" text={emailError} style={{ marginTop: 4 }} />
+            )}
 
             <Spacer size="large" />
           </View>
@@ -120,9 +124,17 @@ export default function EditEmail() {
         <View style={styles.footer}>
           <Button
             title="Request change"
-            onPress={() => router.push('/main/profile/confirm-new-email')}
+            onPress={() => {
+              if (!email || !email.includes('@')) {
+                setEmailError('Please enter a valid email address.');
+                return;
+              }
+              router.push('/main/profile/confirm-new-email');
+            }}
             variant="standard"
           />
+
+          <Spacer size="large" />
         </View>
       </KeyboardAvoidingView>
     </View>

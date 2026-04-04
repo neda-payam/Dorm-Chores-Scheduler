@@ -3,7 +3,6 @@ import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -45,11 +44,6 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -133,7 +127,9 @@ export default function ChangePassword() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       {/* Static header */}
       <View style={styles.topBar}>
@@ -228,6 +224,8 @@ export default function ChangePassword() {
             variant="standard"
             disabled={loading}
           />
+
+          <Spacer size="large" />
         </View>
       </KeyboardAvoidingView>
     </View>
