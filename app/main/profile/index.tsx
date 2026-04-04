@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -174,7 +175,13 @@ export default function Profile() {
 
             <Text style={styles.versionHeading}>Your app version</Text>
             <Spacer size="small" />
-            <Text style={styles.body}>v1.0.0 (build number)</Text>
+            <Text style={styles.body}>
+              v{Constants.expoConfig?.version || '1.0.0'} (
+              {Platform.OS === 'ios'
+                ? Constants.expoConfig?.ios?.buildNumber || '1'
+                : Constants.expoConfig?.android?.versionCode || '1'}
+              )
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
