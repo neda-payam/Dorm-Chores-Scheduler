@@ -72,12 +72,21 @@ describe('Dorms System', () => {
 
   describe('createDorm', () => {
     it('creates a dorm with valid data', async () => {
+      mockSupabase.eq.mockResolvedValueOnce({ count: 0, error: null });
+      mockSupabase.eq.mockResolvedValueOnce({ count: 0, error: null });
       mockSupabase.single.mockResolvedValueOnce({
         data: { id: 'dorm-1', name: 'Maple' },
         error: null,
       });
       const dorm = await createDorm({ name: 'Maple' }, 'user-1');
       expect(dorm.name).toBe('Maple');
+    });
+
+    it('throws error when user has reached max created dorms', async () => {
+      mockSupabase.eq.mockResolvedValueOnce({ count: 3, error: null });
+      await expect(createDorm({ name: 'Maple' }, 'user-1')).rejects.toThrow(
+        'You can only create up to 3 dorms.',
+      );
     });
 
     it('throws error if name is missing', async () => {
@@ -109,6 +118,7 @@ describe('Dorms System', () => {
 
   describe('joinDorm', () => {
     it('joins a dorm successfully', async () => {
+      mockSupabase.eq.mockResolvedValueOnce({ count: 0, error: null });
       mockSupabase.single.mockResolvedValueOnce({
         data: { id: 'dorm-1' },
         error: null,
@@ -122,6 +132,13 @@ describe('Dorms System', () => {
       const member = await joinDorm('user-1', 'CODE12');
       expect(member.user_id).toBe('user-1');
       expect(member.dorm_id).toBe('dorm-1');
+    });
+
+    it('throws error when user has reached max dorm memberships', async () => {
+      mockSupabase.eq.mockResolvedValueOnce({ count: 5, error: null });
+      await expect(joinDorm('user-1', 'CODE12')).rejects.toThrow(
+        'You can only be part of up to 5 dorms.',
+      );
     });
   });
 

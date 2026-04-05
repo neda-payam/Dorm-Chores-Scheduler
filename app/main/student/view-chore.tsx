@@ -54,6 +54,8 @@ export default function ViewChore() {
           console.warn('Profile fetch error:', error);
         }
         setAssignedName(profile?.display_name || 'Unknown User');
+      } else {
+        setAssignedName('Unassigned');
       }
     } catch (e) {
       console.error('Failed to load chore:', e);
@@ -142,9 +144,11 @@ export default function ViewChore() {
 
                 <Text style={styles.fieldLabel}>Status</Text>
                 <Text style={styles.fieldValue}>
-                  {chore.status
-                    ? chore.status.charAt(0).toUpperCase() + chore.status.slice(1)
-                    : 'Pending'}
+                  {chore.meta?.assignedTo
+                    ? chore.status
+                      ? chore.status.charAt(0).toUpperCase() + chore.status.slice(1)
+                      : 'Pending'
+                    : 'Unassigned'}
                 </Text>
                 <Spacer size="medium" />
 

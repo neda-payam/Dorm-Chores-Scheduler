@@ -21,6 +21,7 @@ describe('Chores System', () => {
     jest.clearAllMocks();
     mockSupabase = {
       select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),
       update: jest.fn().mockReturnThis(),
       delete: jest.fn().mockReturnThis(),
@@ -71,6 +72,32 @@ describe('Chores System', () => {
       mockSupabase.single.mockResolvedValueOnce({ data: { id: '1', title: 'Clean' }, error: null });
       const chore = await createChore('dorm-1', { title: 'Clean' });
       expect(chore.title).toBe('Clean');
+    });
+
+    it('creates chore as unassigned when no eligible members are available', async () => {
+      mockSupabase.eq.mockResolvedValueOnce({ count: 0, error: null });
+      mockSupabase.order.mockResolvedValueOnce({
+        data: [{ user_id: 'user-1' }],
+        error: null,
+      });
+      mockSupabase.in.mockResolvedValueOnce({
+        data: [{ id: 'user-1', availability_status: 'unavailable' }],
+        error: null,
+      });
+      mockSupabase.single.mockResolvedValueOnce({ data: { id: '1', title: 'Clean' }, error: null });
+
+      await createChore('dorm-1', { title: 'Clean' });
+
+      const insertedPayload = mockSupabase.insert.mock.calls[0][0][0];
+      expect(insertedPayload.status).toBe('unassigned');
+      expect(insertedPayload.description).toContain('"assignedTo":null');
+    });
+
+    it('throws error if dorm has reached max chore limit', async () => {
+      mockSupabase.eq.mockResolvedValueOnce({ count: 500, error: null });
+      await expect(createChore('dorm-1', { title: 'Clean' })).rejects.toThrow(
+        'Dorm chore limit reached (500).',
+      );
     });
 
     it('throws error if title is missing', async () => {

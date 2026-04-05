@@ -3,6 +3,9 @@ import { getCurrentUser } from './auth';
 import { formatErrorMessage } from './errors';
 import { supabase } from './supabase';
 
+const MAX_DORMS_CREATED_PER_USER = 3;
+const MAX_DORM_MEMBERSHIPS_PER_USER = 5;
+
 export interface DormData {
   name: string;
   join_code?: string;
@@ -74,6 +77,26 @@ export async function createDorm(dormData: DormData, userId: string): Promise<Do
     throw new Error('Dorm name is required');
   }
   if (!userId) throw new Error('User ID is required');
+
+  const { count: createdCount, error: createdCountError } = await supabase
+    .from('dorms')
+    .select('id', { count: 'exact', head: true })
+    .eq('created_by', userId);
+
+  if (createdCountError) throw new Error(formatErrorMessage(createdCountError.message));
+  if ((createdCount || 0) >= MAX_DORMS_CREATED_PER_USER) {
+    throw new Error(`You can only create up to ${MAX_DORMS_CREATED_PER_USER} dorms.`);
+  }
+
+  const { count: membershipCount, error: membershipCountError } = await supabase
+    .from('dorm_members')
+    .select('dorm_id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (membershipCountError) throw new Error(formatErrorMessage(membershipCountError.message));
+  if ((membershipCount || 0) >= MAX_DORM_MEMBERSHIPS_PER_USER) {
+    throw new Error(`You can only be part of up to ${MAX_DORM_MEMBERSHIPS_PER_USER} dorms.`);
+  }
 
   const joinCode = await generateInviteCode();
 
@@ -148,6 +171,16 @@ export async function joinDorm(userId: string, joinCode: string): Promise<DormMe
   if (!userId) throw new Error('User ID is required');
   if (!joinCode) throw new Error('Join code is required');
 
+  const { count: membershipCount, error: membershipCountError } = await supabase
+    .from('dorm_members')
+    .select('dorm_id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (membershipCountError) throw new Error(formatErrorMessage(membershipCountError.message));
+  if ((membershipCount || 0) >= MAX_DORM_MEMBERSHIPS_PER_USER) {
+    throw new Error(`You can only be part of up to ${MAX_DORM_MEMBERSHIPS_PER_USER} dorms.`);
+  }
+
   const { data: dorm, error: dormError } = await supabase
     .from('dorms')
     .select('*')
@@ -194,6 +227,16 @@ export async function leaveDorm(userId: string, dormId: string): Promise<void> {
 export async function inviteUserToDorm(userId: string, dormId: string): Promise<DormMember> {
   if (!userId) throw new Error('User ID is required');
   if (!dormId) throw new Error('Dorm ID is required');
+
+  const { count: membershipCount, error: membershipCountError } = await supabase
+    .from('dorm_members')
+    .select('dorm_id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (membershipCountError) throw new Error(formatErrorMessage(membershipCountError.message));
+  if ((membershipCount || 0) >= MAX_DORM_MEMBERSHIPS_PER_USER) {
+    throw new Error(`You can only be part of up to ${MAX_DORM_MEMBERSHIPS_PER_USER} dorms.`);
+  }
 
   const { data, error } = await supabase
     .from('dorm_members')

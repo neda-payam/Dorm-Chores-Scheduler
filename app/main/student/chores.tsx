@@ -216,7 +216,11 @@ export default function Chores() {
   displayChores = displayChores.map((c) => {
     const parentChore = fetchedChores.find((hc) => hc.id === c.id);
     const isMe = currentUserId && c.assignedTo === currentUserId;
-    const name = isMe ? 'You' : parentChore?.assignedName || 'Unknown User';
+    const name = isMe
+      ? 'You'
+      : c.assignedTo
+        ? parentChore?.assignedName || 'Unknown User'
+        : 'Unassigned';
 
     let dueDate = dayjs(parentChore?.created_at || new Date()).add(
       parentChore?.meta?.due_in_days || 7,
