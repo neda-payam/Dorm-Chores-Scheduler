@@ -6,6 +6,30 @@ import { supabase } from './supabase';
 const MAX_DORMS_CREATED_PER_USER = 3;
 const MAX_DORM_MEMBERSHIPS_PER_USER = 5;
 
+function isMissingTableError(error: any): boolean {
+  if (!error) return false;
+  const code = error.code || '';
+  const message = String(error.message || '').toLowerCase();
+
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    message.includes('could not find the table') ||
+    message.includes('schema cache')
+  );
+}
+
+async function deleteByDormId(table: string, dormId: string): Promise<void> {
+  const { error } = await supabase.from(table).delete().eq('dorm_id', dormId);
+  if (error && !isMissingTableError(error)) {
+    throw new Error(formatErrorMessage(error.message));
+  }
+}
+
+async function tryDeleteDormRow(dormId: string) {
+  return await supabase.from('dorms').delete().eq('id', dormId).select('id').maybeSingle();
+}
+
 export interface DormData {
   name: string;
   join_code?: string;
@@ -85,7 +109,9 @@ export async function createDorm(dormData: DormData, userId: string): Promise<Do
 
   if (createdCountError) throw new Error(formatErrorMessage(createdCountError.message));
   if ((createdCount || 0) >= MAX_DORMS_CREATED_PER_USER) {
-    throw new Error(`You can only create up to ${MAX_DORMS_CREATED_PER_USER} dorms.`);
+    throw new Error(
+      `You can only create up to ${MAX_DORMS_CREATED_PER_USER} dorms. Delete one you created to make room.`,
+    );
   }
 
   const { count: membershipCount, error: membershipCountError } = await supabase
@@ -155,16 +181,32 @@ export async function deleteDorm(dormId: string): Promise<void> {
     throw new Error('Only the creator of the dorm can delete it.');
   }
 
-  // Remove all associated dependencies to prevent foreign key errors.
-  // We ignore errors on dependencies in case the tables are empty or rename/missing.
-  await supabase.from('chores').delete().eq('dorm_id', dormId);
-  await supabase.from('repair_requests').delete().eq('dorm_id', dormId);
-  await supabase.from('repairs').delete().eq('dorm_id', dormId);
-  await supabase.from('dorm_members').delete().eq('dorm_id', dormId);
+  const firstAttempt = await tryDeleteDormRow(dormId);
+  if (!firstAttempt.error && firstAttempt.data) {
+    return;
+  }
 
-  const { error } = await supabase.from('dorms').delete().eq('id', dormId);
+  if (firstAttempt.error && firstAttempt.error.code === '23503') {
+    await deleteByDormId('chores', dormId);
+    await deleteByDormId('repair_requests', dormId);
+    await deleteByDormId('repairs', dormId);
+    await deleteByDormId('dorm_members', dormId);
 
-  if (error) throw new Error(formatErrorMessage(error.message));
+    const retryAttempt = await tryDeleteDormRow(dormId);
+    if (retryAttempt.error) throw new Error(formatErrorMessage(retryAttempt.error.message));
+    if (!retryAttempt.data) {
+      throw new Error('Dorm was not deleted. You may not have permission to delete this dorm.');
+    }
+    return;
+  }
+
+  if (firstAttempt.error) {
+    throw new Error(formatErrorMessage(firstAttempt.error.message));
+  }
+
+  if (!firstAttempt.data) {
+    throw new Error('Dorm was not deleted. You may not have permission to delete this dorm.');
+  }
 }
 
 export async function joinDorm(userId: string, joinCode: string): Promise<DormMember> {

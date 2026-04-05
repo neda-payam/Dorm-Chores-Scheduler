@@ -31,6 +31,7 @@ describe('Dorms System', () => {
       update: jest.fn().mockReturnThis(),
       delete: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockReturnThis(),
       match: jest.fn().mockReturnThis(),
       order: jest.fn().mockReturnThis(),
       single: jest.fn().mockReturnThis(),
@@ -85,7 +86,7 @@ describe('Dorms System', () => {
     it('throws error when user has reached max created dorms', async () => {
       mockSupabase.eq.mockResolvedValueOnce({ count: 3, error: null });
       await expect(createDorm({ name: 'Maple' }, 'user-1')).rejects.toThrow(
-        'You can only create up to 3 dorms.',
+        'You can only create up to 3 dorms. Delete one you created to make room.',
       );
     });
 
@@ -110,6 +111,10 @@ describe('Dorms System', () => {
       (getCurrentUser as jest.Mock).mockResolvedValueOnce({ id: 'user-1' });
       mockSupabase.single.mockResolvedValueOnce({
         data: { created_by: 'user-1' },
+        error: null,
+      });
+      mockSupabase.maybeSingle.mockResolvedValueOnce({
+        data: { id: 'dorm-1' },
         error: null,
       });
       await expect(deleteDorm('dorm-1')).resolves.not.toThrow();
