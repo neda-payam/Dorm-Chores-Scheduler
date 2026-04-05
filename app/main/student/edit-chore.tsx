@@ -49,6 +49,7 @@ export default function EditChore() {
   const [dueWithinError, setDueWithinError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState<boolean | null>(null);
   const [selectedFrequency, setSelectedFrequency] = useState<string | null>(null);
+  const [frequencyError, setFrequencyError] = useState<string | null>(null);
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
@@ -75,6 +76,9 @@ export default function EditChore() {
       setTitle(data.title);
       setDescription(data.description || '');
       setDueWithinDays(data.meta?.due_in_days?.toString() || '7');
+      const recurring = !!data.meta?.isRecurring;
+      setIsRecurring(recurring);
+      setSelectedFrequency(recurring ? data.meta?.frequency || null : null);
     } catch (e) {
       console.error('Failed to load chore:', e);
       setNotice({ type: 'error', text: 'Could not load chore details. Please try again.' });
@@ -117,7 +121,10 @@ export default function EditChore() {
 
   const handleRecurringToggle = (value: boolean) => {
     setIsRecurring(value);
-    if (!value) setSelectedFrequency(null);
+    if (!value) {
+      setSelectedFrequency(null);
+      setFrequencyError(null);
+    }
   };
 
   const handleSave = async () => {
@@ -125,6 +132,7 @@ export default function EditChore() {
     setTitleError(null);
     setDescriptionError(null);
     setDueWithinError(null);
+    setFrequencyError(null);
 
     const titleTrimmed = title.trim();
     const descriptionTrimmed = description.trim();
@@ -149,6 +157,11 @@ export default function EditChore() {
       hasError = true;
     }
 
+    if (isRecurring === true && !selectedFrequency) {
+      setFrequencyError('Please select a repeat frequency.');
+      hasError = true;
+    }
+
     if (hasError) return;
 
     if (!id) return;
@@ -159,7 +172,9 @@ export default function EditChore() {
         title: titleTrimmed,
         description: descriptionTrimmed || undefined,
         meta: {
-          due_in_days: parseInt(dueWithinDays, 10) || 7,
+          due_in_days: dwdParsed,
+          isRecurring: isRecurring || false,
+          frequency: isRecurring ? selectedFrequency : null,
         },
       });
       router.push('/main/student/chores');
@@ -314,10 +329,19 @@ export default function EditChore() {
                           key={option.key}
                           label={option.label}
                           active={selectedFrequency === option.key}
-                          onPress={() => setSelectedFrequency(option.key)}
+                          onPress={() => {
+                            setSelectedFrequency(option.key);
+                            setFrequencyError(null);
+                          }}
                         />
                       ))}
                     </View>
+                    {frequencyError && (
+                      <>
+                        <Spacer size="small" />
+                        <InlineNotification type="error" text={frequencyError} />
+                      </>
+                    )}
                   </>
                 )}
 
