@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   BackHandler,
   Keyboard,
@@ -22,18 +23,28 @@ import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { getCurrentUser } from '../../../lib/auth';
+import {
+  Dorm,
+  deleteDorm,
+  generateInviteCode,
+  getDormById,
+  leaveDorm,
+  updateDorm,
+} from '../../../lib/dorms';
 
 const GRADIENT_THRESHOLD = 24;
 
-// TODO: Replace with data fetched from API based on active dorm ID
-const EXISTING_DORM = {
-  name: 'Maple House',
-};
-
 export default function EditDorm() {
-  const [name, setName] = useState(EXISTING_DORM.name);
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [dorm, setDorm] = useState<Dorm | null>(null);
+  const [isCreator, setIsCreator] = useState(false);
+
+  const [name, setName] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [notice, setNotice] = useState<{
     type: 'error' | 'success' | 'info' | 'warning' | 'tip';
     text: string;
@@ -41,17 +52,46 @@ export default function EditDorm() {
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
 
+  const loadDorm = useCallback(async () => {
+    if (!id) return;
+    setIsLoading(true);
+    try {
+      const user = await getCurrentUser();
+      const dormData = await getDormById(id);
+      if (dormData) {
+        setDorm(dormData);
+        setName(dormData.name);
+        if (user && dormData.created_by === user.id) {
+          setIsCreator(true);
+        } else {
+          setIsCreator(false);
+        }
+      }
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to load dorm' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDorm();
+    }, [loadDorm]),
+  );
+
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (confirmingDelete) {
+      if (confirmingDelete || confirmingLeave) {
         setConfirmingDelete(false);
+        setConfirmingLeave(false);
         return true;
       }
       router.back();
       return true;
     });
     return () => backHandler.remove();
-  }, [confirmingDelete]);
+  }, [confirmingDelete, confirmingLeave]);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -69,22 +109,72 @@ export default function EditDorm() {
     headerGradientOpacity.setValue(headerValue);
   };
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     setNotice(null);
+    if (!id) return;
 
-    if (!name.trim()) {
+    const nameTrimmed = name.trim();
+
+    if (!nameTrimmed) {
       setNotice({ type: 'error', text: 'Please enter a dorm name' });
       return;
     }
+    if (nameTrimmed.length < 3 || nameTrimmed.length > 50) {
+      setNotice({ type: 'error', text: 'Dorm name must be between 3 and 50 characters' });
+      return;
+    }
 
-    // TODO: submit updated dorm to API
-    router.push('/main/student/dorms');
-  }, [name]);
+    try {
+      await updateDorm(id, { name: nameTrimmed });
+      router.push('/main/student/dorms');
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to update dorm' });
+    }
+  }, [name, id]);
 
-  const handleDeleteConfirmed = useCallback(() => {
-    // TODO: delete dorm via API
-    router.push('/main/student/dorms');
-  }, []);
+  const handleRegenerateInvite = useCallback(async () => {
+    setNotice(null);
+    if (!id || !isCreator) return;
+
+    try {
+      const newCode = await generateInviteCode();
+      await updateDorm(id, { name: dorm?.name || '', join_code: newCode });
+      setDorm((prev) => (prev ? { ...prev, join_code: newCode } : null));
+      setNotice({ type: 'success', text: `Invite code regenerated: ${newCode}` });
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to regenerate invite code' });
+    }
+  }, [id, isCreator, dorm]);
+
+  const handleDeleteConfirmed = useCallback(async () => {
+    if (!id) return;
+    try {
+      await deleteDorm(id);
+      router.push('/main/student/dorms');
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to delete dorm' });
+    }
+  }, [id]);
+
+  const handleLeaveConfirmed = useCallback(async () => {
+    if (!id) return;
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('Not logged in');
+      await leaveDorm(user.id, id);
+      router.push('/main/student/dorms');
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to leave dorm' });
+    }
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLOURS.black} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -122,22 +212,42 @@ export default function EditDorm() {
           scrollEventThrottle={16}
         >
           <View style={styles.content}>
-            <Text style={styles.heading}>Edit Dorm</Text>
+            <Text style={styles.heading}>{isCreator ? 'Edit Dorm' : 'Dorm Info'}</Text>
 
             <Spacer size="small" />
 
             <Text style={styles.subheading}>
-              Changes you make here will be visible to all members of the dorm
+              {isCreator
+                ? 'Changes you make here will be visible to all members of the dorm'
+                : 'Only the creator can edit dorm details.'}
             </Text>
 
             <Spacer size="large" />
 
             <Text style={styles.inputLabel}>Dorm name</Text>
-            <Input value={name} onChangeText={setName} placeholder="e.g. Maple House" />
+            <Input
+              value={name}
+              onChangeText={setName}
+              placeholder="e.g. Maple House"
+              editable={isCreator}
+            />
 
             <Spacer size="large" />
 
-            <Button title="Save changes" onPress={handleSave} variant="standard" />
+            {dorm && (
+              <>
+                <Text style={styles.inputLabel}>Invite code</Text>
+                <View style={styles.inviteCodeRow}>
+                  <Text style={styles.inviteCodeText}>{dorm.join_code}</Text>
+                  {isCreator && (
+                    <InlineButton title="Regenerate" onPress={handleRegenerateInvite} />
+                  )}
+                </View>
+                <Spacer size="large" />
+              </>
+            )}
+
+            {isCreator && <Button title="Save changes" onPress={handleSave} variant="standard" />}
 
             {notice && (
               <>
@@ -152,32 +262,52 @@ export default function EditDorm() {
 
             <Spacer size="large" />
 
-            <Text style={styles.dangerLabel}>Delete dorm</Text>
+            <Text style={styles.dangerLabel}>{isCreator ? 'Delete dorm' : 'Leave dorm'}</Text>
 
             <Spacer size="small" />
 
             <Text style={styles.subheading}>
-              This is permanent and cannot be undone. All chores and repairs will also be removed
+              {isCreator
+                ? 'This is permanent and cannot be undone. All chores and repairs will also be removed.'
+                : 'You will lose access to the chores and repairs for this dorm.'}
             </Text>
 
             <Spacer size="medium" />
 
-            {confirmingDelete ? (
+            {isCreator ? (
+              confirmingDelete ? (
+                <>
+                  <Text style={styles.confirmLabel}>Are you sure?</Text>
+                  <Spacer size="small" />
+                  <Text style={styles.subheading}>
+                    This action cannot be reversed once confirmed
+                  </Text>
+                  <Spacer size="medium" />
+                  <Button
+                    title="Yes, delete dorm"
+                    onPress={handleDeleteConfirmed}
+                    variant="danger"
+                  />
+                </>
+              ) : (
+                <Button
+                  title="Delete dorm"
+                  onPress={() => setConfirmingDelete(true)}
+                  variant="danger"
+                />
+              )
+            ) : confirmingLeave ? (
               <>
                 <Text style={styles.confirmLabel}>Are you sure?</Text>
-
                 <Spacer size="small" />
-
-                <Text style={styles.subheading}>This action cannot be reversed once confirmed</Text>
-
+                <Text style={styles.subheading}>You will need an invite code to rejoin</Text>
                 <Spacer size="medium" />
-
-                <Button title="Yes, delete dorm" onPress={handleDeleteConfirmed} variant="danger" />
+                <Button title="Yes, leave dorm" onPress={handleLeaveConfirmed} variant="danger" />
               </>
             ) : (
               <Button
-                title="Delete dorm"
-                onPress={() => setConfirmingDelete(true)}
+                title="Leave dorm"
+                onPress={() => setConfirmingLeave(true)}
                 variant="danger"
               />
             )}
@@ -261,6 +391,21 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: COLOURS.gray[200],
+  },
+  inviteCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLOURS.gray[100],
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  inviteCodeText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    color: COLOURS.black,
+    letterSpacing: 1,
   },
   centerText: {
     fontFamily: 'Inter',

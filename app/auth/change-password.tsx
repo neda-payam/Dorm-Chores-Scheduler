@@ -20,6 +20,7 @@ import InputCode from '../../components/InputCode';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
+import { formatErrorMessage } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
 import { validateNoSqlInjection, validatePassword, validateRequired } from '../../lib/validation';
 
@@ -75,95 +76,78 @@ export default function ChangePassword() {
     clearErrors();
 
     const cleanedCode = codeValue.replace(/\D/g, '');
-
     const emailValue = typeof email === 'string' ? email : '';
 
-    const codeRequired = validateRequired(cleanedCode, 'Confirmation code');
-    if (!codeRequired.isValid) {
-      setCodeError(codeRequired.error ?? 'Confirmation code is required.');
-      return;
-    }
+    try {
+      validateRequired(cleanedCode, 'Confirmation code');
+      validateNoSqlInjection(cleanedCode, 'Confirmation code');
 
-    const passwordRequired = validateRequired(password, 'Password');
-    if (!passwordRequired.isValid) {
-      setPasswordError(passwordRequired.error ?? 'Password is required.');
-      return;
-    }
+      validateRequired(password, 'Password');
+      validateNoSqlInjection(password, 'Password');
+      validatePassword(password);
 
-    const confirmRequired = validateRequired(confirmPassword, 'Confirm password');
-    if (!confirmRequired.isValid) {
-      setConfirmPasswordError(confirmRequired.error ?? 'Confirm password is required.');
-      return;
-    }
+      validateRequired(confirmPassword, 'Confirm password');
+      validateNoSqlInjection(confirmPassword, 'Confirm password');
 
-    const codeSqlCheck = validateNoSqlInjection(cleanedCode, 'Confirmation code');
-    if (!codeSqlCheck.isValid) {
-      setCodeError(codeSqlCheck.error ?? 'Confirmation code contains invalid characters.');
-      return;
-    }
+      const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
+      if (!codeFormatCheck) {
+        setCodeError('Confirmation code must be a 6-digit number.');
+        return;
+      }
 
-    const passwordSqlCheck = validateNoSqlInjection(password, 'Password');
-    if (!passwordSqlCheck.isValid) {
-      setPasswordError(passwordSqlCheck.error ?? 'Password contains invalid characters.');
-      return;
-    }
+      if (password !== confirmPassword) {
+        setConfirmPasswordError('Passwords do not match.');
+        return;
+      }
 
-    const confirmSqlCheck = validateNoSqlInjection(confirmPassword, 'Confirm password');
-    if (!confirmSqlCheck.isValid) {
-      setConfirmPasswordError(
-        confirmSqlCheck.error ?? 'Confirm password contains invalid characters.',
-      );
-      return;
-    }
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: emailValue,
+        token: cleanedCode,
+        type: 'recovery',
+      });
 
-    const codeFormatCheck = /^\d{6}$/.test(cleanedCode);
-    if (!codeFormatCheck) {
-      setCodeError('Confirmation code must be a 6-digit number.');
-      return;
-    }
+      if (verifyError) {
+        setCodeError(formatErrorMessage(verifyError.message));
+        return;
+      }
 
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      setPasswordError(passwordValidation.error ?? 'Password is invalid.');
-      return;
-    }
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
 
-    if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match.');
-      return;
-    }
+      if (updateError) {
+        setNotice({
+          type: 'error',
+          text: formatErrorMessage(updateError.message),
+        });
+        return;
+      }
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: emailValue,
-      token: cleanedCode,
-      type: 'recovery',
-    });
+      setNotice({
+        type: 'success',
+        text: 'Password changed successfully! Please sign in with your new password.',
+      });
 
-    if (verifyError) {
-      setCodeError(verifyError.message);
-      return;
-    }
+      setTimeout(() => {
+        router.push('/auth/signin');
+      }, 1500);
+    } catch (err: any) {
+      if (err.name === 'ValidationError') {
+        if (err.message.startsWith('Confirmation')) {
+          setCodeError(err.message);
+        } else if (err.message.startsWith('Confirm password')) {
+          setConfirmPasswordError(err.message);
+        } else if (err.message.startsWith('Password')) {
+          setPasswordError(err.message);
+        }
+        return;
+      }
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    });
-
-    if (updateError) {
       setNotice({
         type: 'error',
-        text: updateError.message,
+        text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
       });
-      return;
     }
-
-    setNotice({
-      type: 'success',
-      text: 'Password changed successfully! Please sign in with your new password.',
-    });
-
-    setTimeout(() => {
-      router.push('/auth/signin');
-    }, 1500);
   }, [codeValue, confirmPassword, email, password]);
 
   const scrollContent = (

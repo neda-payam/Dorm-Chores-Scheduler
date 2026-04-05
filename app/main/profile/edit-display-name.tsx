@@ -3,7 +3,6 @@ import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   KeyboardAvoidingView,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -31,11 +30,6 @@ export default function EditDisplayName() {
   const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     const loadDisplayName = async () => {
@@ -149,7 +143,15 @@ export default function EditDisplayName() {
 
             <Text style={styles.label}>New display name</Text>
 
-            <Input value={displayName} onChangeText={setDisplayName} placeholder="Example Name" />
+            <Input
+              value={displayName}
+              onChangeText={(val) => {
+                setDisplayName(val);
+                if (notice?.type === 'error') setNotice(null);
+              }}
+              placeholder="Example Name"
+              hasError={notice?.type === 'error'}
+            />
 
             {notice && (
               <>
@@ -168,6 +170,7 @@ export default function EditDisplayName() {
             onPress={handleSaveDisplayName}
             disabled={loading}
           />
+          <Spacer size="large" />
         </View>
       </KeyboardAvoidingView>
     </View>

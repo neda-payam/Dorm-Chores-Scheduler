@@ -1,10 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
-  BackHandler,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -28,11 +27,6 @@ export default function DeleteAccount() {
   const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = e.nativeEvent.contentOffset.y;
@@ -72,7 +66,9 @@ export default function DeleteAccount() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       {/* Static header */}
       <View style={styles.topBar}>
@@ -130,6 +126,8 @@ export default function DeleteAccount() {
           variant="danger"
           disabled={loading}
         />
+
+        <Spacer size="large" />
       </View>
     </View>
   );

@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack, router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   BackHandler,
   Keyboard,
@@ -24,6 +25,9 @@ import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { getCurrentUser } from '../../../lib/auth';
+import { getActiveDormId, setActiveDormId } from '../../../lib/dorms';
+import { supabase } from '../../../lib/supabase';
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -62,40 +66,15 @@ type DormSummary = {
 
 type DormListItem = DormSummary & { id: string };
 
-// When both are empty, it will show the no dorms found screen.
-// TODO: Find a way to mandate one always active, if not make the user create / join one.
-const CURRENT_DORM: DormSummary | null = {
-  title: 'Building / Apartment Name',
-  subtitle: 'Created by Name - 20/02/2026',
-  stats: [
-    { value: 5, label: 'Members' },
-    { value: 12, label: 'Chores' },
-    { value: 1, label: 'Repairs' },
-  ],
-};
-
-// const CURRENT_DORM: DormSummary | null = null;
-
-const OTHER_DORMS: DormListItem[] = [
-  {
-    id: '1',
-    title: 'Building / Apartment Name',
-    subtitle: 'Created by Name - 20/02/2026',
-    stats: [
-      { value: 2, label: 'Members' },
-      { value: 53, label: 'Chores' },
-      { value: 5, label: 'Repairs' },
-    ],
-  },
-];
-
-// const OTHER_DORMS: (DormSummary & { id: string })[] = [];
-
 export default function Dorms() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [isJoinPressed, setIsJoinPressed] = useState(false);
   const [isCreatePressed, setIsCreatePressed] = useState(false);
+
+  const [currentDorm, setCurrentDorm] = useState<DormListItem | null>(null);
+  const [otherDorms, setOtherDorms] = useState<DormListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -103,6 +82,107 @@ export default function Dorms() {
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
   const navGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  const loadDorms = async () => {
+    setIsLoading(true);
+    try {
+      const user = await getCurrentUser();
+      if (!user?.id) return;
+
+      const { data: memberships, error } = await supabase
+        .from('dorm_members')
+        .select('dorm_id, joined_at, dorms (id, name, created_at, created_by)')
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: false });
+
+      if (error) {
+        console.warn('Error fetching dorm memberships:', error);
+        return;
+      }
+
+      if (memberships && memberships.length > 0) {
+        const fetchStats = async (dormId: string) => {
+          const [membersRes, choresRes] = await Promise.all([
+            supabase
+              .from('dorm_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('dorm_id', dormId),
+            supabase
+              .from('chores')
+              .select('*', { count: 'exact', head: true })
+              .eq('dorm_id', dormId),
+          ]);
+          return [
+            { value: membersRes.count || 0, label: 'Members' },
+            { value: choresRes.count || 0, label: 'Chores' },
+            { value: 0, label: 'Repairs' }, // Not fully implemented yet
+          ];
+        };
+
+        const processDorm = async (m: any) => {
+          const d = Array.isArray(m.dorms) ? m.dorms[0] : m.dorms;
+
+          let creatorName = 'Unknown';
+          if (d?.created_by) {
+            if (user && user.id === d.created_by) {
+              creatorName = 'You';
+            } else {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('display_name')
+                .eq('id', d.created_by)
+                .maybeSingle();
+              if (profile?.display_name) {
+                creatorName = profile.display_name;
+              }
+            }
+          }
+
+          let dateStr = 'Unknown';
+          if (d?.created_at) {
+            const dObj = new Date(d.created_at);
+            dateStr = `${dObj.getDate().toString().padStart(2, '0')}/${(dObj.getMonth() + 1).toString().padStart(2, '0')}/${dObj.getFullYear()}`;
+          }
+
+          const stats = await fetchStats(d?.id || m.dorm_id);
+
+          return {
+            id: d?.id || m.dorm_id,
+            title: d?.name || 'Unknown Dorm',
+            subtitle: `Created by ${creatorName} - ${dateStr}`,
+            stats,
+          };
+        };
+
+        const all = await Promise.all(memberships.map(processDorm));
+
+        let activeIndex = 0;
+        const activeId = await getActiveDormId();
+        if (activeId) {
+          const idx = all.findIndex((d) => d.id === activeId);
+          if (idx !== -1) {
+            activeIndex = idx;
+          }
+        }
+
+        setCurrentDorm(all[activeIndex]);
+        setOtherDorms([...all.slice(0, activeIndex), ...all.slice(activeIndex + 1)]);
+      } else {
+        setCurrentDorm(null);
+        setOtherDorms([]);
+      }
+    } catch (error) {
+      console.warn('Failed to load dorms', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDorms();
+    }, []),
+  );
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -143,11 +223,13 @@ export default function Dorms() {
     }
   };
 
-  const items: NavBarItem[] = NAV_ITEMS.map((item) => ({
+  const isEmpty = !currentDorm && otherDorms.length === 0;
+
+  const items: NavBarItem[] = (
+    isEmpty ? NAV_ITEMS.filter((item) => item.key === 'dorms') : NAV_ITEMS
+  ).map((item) => ({
     ...item,
   }));
-
-  const isEmpty = !CURRENT_DORM && OTHER_DORMS.length === 0;
 
   return (
     <View style={styles.container}>
@@ -197,7 +279,13 @@ export default function Dorms() {
           <View style={styles.content}>
             <Text style={styles.title}>Current dorm</Text>
 
-            {isEmpty ? (
+            {isLoading ? (
+              <View
+                style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}
+              >
+                <ActivityIndicator size="large" color={COLOURS.black} />
+              </View>
+            ) : isEmpty ? (
               <>
                 <Spacer size="large" />
 
@@ -216,16 +304,17 @@ export default function Dorms() {
               </>
             ) : (
               <>
-                {CURRENT_DORM ? (
+                {currentDorm ? (
                   <View style={styles.table}>
                     <View style={styles.tableRow}>
                       <DormCard
-                        title={CURRENT_DORM.title}
-                        subtitle={CURRENT_DORM.subtitle}
-                        stats={CURRENT_DORM.stats}
+                        title={currentDorm.title}
+                        subtitle={currentDorm.subtitle}
+                        stats={currentDorm.stats}
                         primaryAction={{
                           label: 'Edit dorm',
-                          onPress: () => router.push('/main/student/edit-dorm'),
+                          onPress: () =>
+                            router.push(`/main/student/edit-dorm?id=${currentDorm.id}`),
                           variant: 'secondary',
                         }}
                       />
@@ -237,9 +326,9 @@ export default function Dorms() {
                   <Text style={styles.title}>Other dorm(s)</Text>
                 </View>
 
-                {OTHER_DORMS.length > 0 ? (
+                {otherDorms.length > 0 ? (
                   <View style={styles.table}>
-                    {OTHER_DORMS.map((dorm, index) => (
+                    {otherDorms.map((dorm, index) => (
                       <View key={dorm.id} style={styles.tableRow}>
                         <DormCard
                           title={dorm.title}
@@ -247,16 +336,19 @@ export default function Dorms() {
                           stats={dorm.stats}
                           primaryAction={{
                             label: 'Edit dorm',
-                            onPress: () => router.push('/main/student/edit-dorm'),
+                            onPress: () => router.push(`/main/student/edit-dorm?id=${dorm.id}`),
                             variant: 'secondary',
                           }}
                           secondaryAction={{
                             label: 'Switch dorm',
-                            onPress: () => {}, // TODO: Implement switch dorm functionality
+                            onPress: async () => {
+                              await setActiveDormId(dorm.id);
+                              loadDorms();
+                            },
                             variant: 'primary',
                           }}
                         />
-                        {index < OTHER_DORMS.length - 1 ? <Spacer size="small" /> : null}
+                        {index < otherDorms.length - 1 ? <Spacer size="small" /> : null}
                       </View>
                     ))}
                   </View>
@@ -267,7 +359,7 @@ export default function Dorms() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {isEmpty ? (
+      {!isLoading && isEmpty ? (
         <View style={styles.emptyActions}>
           <View style={styles.joinButtonWrapper}>
             <View style={[styles.buttonBorder, isJoinPressed && styles.buttonBorderJoinPressed]}>

@@ -1,13 +1,13 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  Animated,
+  ActivityIndicator,
+  Alert,
   BackHandler,
   Keyboard,
   KeyboardAvoidingView,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,25 +20,66 @@ import HeaderBackButton from '../../../components/HeaderBackButton';
 import InlineButton from '../../../components/InlineButton';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { Chore, getChoreById, markChoreComplete } from '../../../lib/chores';
+import { supabase } from '../../../lib/supabase';
 
-const GRADIENT_THRESHOLD = 24;
-
-// TODO: Replace with data fetched from API based on chore ID passed via route params
-const CHORE = {
-  title: 'Take out the bins',
-  description: 'Make sure all bags are tied before taking them out',
-  category: 'Bins',
-  isRecurring: true,
-  frequency: 'Weekly',
-  assignedTo: 'Person 1',
-  createdBy: 'Person 2',
-  createdAt: '14/03/2026',
-};
+dayjs.extend(relativeTime);
 
 export default function ViewChore() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [chore, setChore] = useState<Chore | null>(null);
+  const [assignedName, setAssignedName] = useState<string>('Unassigned');
+  const [loading, setLoading] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  const headerGradientOpacity = useRef(new Animated.Value(0)).current;
+  // Load chore data
+  const loadChore = useCallback(async () => {
+    const fetchId = Array.isArray(id) ? id[0] : id;
+    if (!fetchId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await getChoreById(fetchId);
+      setChore(data);
+
+      if (data && data.meta?.assignedTo) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', data.meta.assignedTo)
+          .single();
+        if (error) {
+          console.warn('Profile fetch error:', error);
+        }
+        setAssignedName(profile?.display_name || 'Unknown User');
+      } else {
+        setAssignedName('Unassigned');
+      }
+    } catch (e) {
+      console.error('Failed to load chore:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChore();
+    }, [loadChore]),
+  );
+
+  const handleMarkComplete = async () => {
+    if (!chore) return;
+    try {
+      await markChoreComplete(chore.id);
+      Alert.alert('Success', 'Chore marked as completed!');
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to complete chore');
+    }
+  };
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -57,13 +98,6 @@ export default function ViewChore() {
     };
   }, []);
 
-  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset } = e.nativeEvent;
-    const scrollY = contentOffset.y;
-    const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
-    headerGradientOpacity.setValue(headerValue);
-  };
-
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -73,18 +107,6 @@ export default function ViewChore() {
       <View style={styles.topBar}>
         <HeaderBackButton iconName="times" />
       </View>
-
-      <Animated.View
-        style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
-        pointerEvents="none"
-      >
-        <LinearGradient
-          colors={['rgba(134, 134, 133, 0.35)', 'rgba(102, 102, 102, 0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -96,65 +118,99 @@ export default function ViewChore() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
         >
           <View style={styles.content}>
-            <Text style={styles.heading}>{CHORE.title}</Text>
-
-            <Spacer size="small" />
-
-            <Text style={styles.subheading}>
-              Created by {CHORE.createdBy} on {CHORE.createdAt}
-            </Text>
-
-            <Spacer size="large" />
-
-            {CHORE.description ? (
+            {loading ? (
+              <ActivityIndicator size="large" color={COLOURS.primary} />
+            ) : chore ? (
               <>
-                <Text style={styles.fieldLabel}>Description</Text>
-                <Text style={styles.fieldValue}>{CHORE.description}</Text>
+                <Text style={styles.heading}>{chore.title}</Text>
+
+                <Spacer size="small" />
+
+                <Text style={styles.subheading}>
+                  Created on {dayjs(chore.created_at).format('DD/MM/YYYY')}
+                </Text>
+
+                <Spacer size="large" />
+
+                {chore.description ? (
+                  <>
+                    <Text style={styles.fieldLabel}>Description</Text>
+                    <Text style={styles.fieldValue}>{chore.description}</Text>
+                    <Spacer size="medium" />
+                  </>
+                ) : null}
+
+                <Text style={styles.fieldLabel}>Status</Text>
+                <Text style={styles.fieldValue}>
+                  {chore.meta?.assignedTo
+                    ? chore.status
+                      ? chore.status.charAt(0).toUpperCase() + chore.status.slice(1)
+                      : 'Pending'
+                    : 'Unassigned'}
+                </Text>
                 <Spacer size="medium" />
+
+                <Text style={styles.fieldLabel}>Assigned To</Text>
+                <Text style={styles.fieldValue}>{assignedName}</Text>
+                <Spacer size="medium" />
+                <Text style={styles.fieldLabel}>Due Date</Text>
+                <Text style={styles.fieldValue}>
+                  {dayjs(chore.created_at)
+                    .add(chore.meta?.due_in_days || 7, 'day')
+                    .format('DD/MM/YYYY')}{' '}
+                  (
+                  {dayjs(chore.created_at)
+                    .add(chore.meta?.due_in_days || 7, 'day')
+                    .fromNow()}
+                  )
+                </Text>
+                <Spacer size="medium" />
+                {chore.meta?.category ? (
+                  <>
+                    <Text style={styles.fieldLabel}>Category</Text>
+                    <Text style={styles.fieldValue}>
+                      {chore.meta.category.charAt(0).toUpperCase() + chore.meta.category.slice(1)}
+                    </Text>
+                    <Spacer size="medium" />
+                  </>
+                ) : null}
+
+                {chore.meta?.isRecurring ? (
+                  <>
+                    <Text style={styles.fieldLabel}>Repetition</Text>
+                    <Text style={styles.fieldValue}>Recurring {chore.meta.frequency}</Text>
+                    <Spacer size="medium" />
+                  </>
+                ) : null}
+
+                <Spacer size="large" />
+
+                {chore.status !== 'completed' && (
+                  <>
+                    <Button title="Mark as completed" onPress={handleMarkComplete} />
+                    <Spacer size="small" />
+                  </>
+                )}
+
+                <Button
+                  title="Edit chore"
+                  onPress={() => router.push(`/main/student/edit-chore?id=${chore.id}`)}
+                  variant="secondary"
+                />
+
+                <Spacer size="large" />
+
+                <Text style={styles.centerText}>
+                  Done here? <InlineButton title="Go back" onPress={() => router.back()} />
+                </Text>
+
+                <Spacer size="large" />
               </>
-            ) : null}
-
-            <Text style={styles.fieldLabel}>Category</Text>
-            <Text style={styles.fieldValue}>{CHORE.category}</Text>
-
-            <Spacer size="medium" />
-
-            <Text style={styles.fieldLabel}>Repeats</Text>
-            <Text style={styles.fieldValue}>{CHORE.isRecurring ? CHORE.frequency : 'No'}</Text>
-
-            <Spacer size="medium" />
-
-            <Text style={styles.fieldLabel}>Assigned to</Text>
-            <Text style={styles.fieldValue}>{CHORE.assignedTo}</Text>
-
-            <Spacer size="large" />
-
-            <Button
-              title="Reassign chore"
-              onPress={() => {
-                // TODO: run reassign flow
-              }}
-            />
-
-            <Spacer size="small" />
-
-            <Button
-              title="Edit chore"
-              onPress={() => router.push('/main/student/edit-chore')}
-              variant="secondary"
-            />
-
-            <Spacer size="large" />
-
-            <Text style={styles.centerText}>
-              Done here? <InlineButton title="Go back" onPress={() => router.back()} />
-            </Text>
-
-            <Spacer size="large" />
+            ) : (
+              <Text style={styles.errorText}>Chore not found.</Text>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -223,5 +279,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLOURS.black,
     textAlign: 'center',
+  },
+  errorText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    color: COLOURS.error.text,
+    textAlign: 'center',
+    marginTop: 40,
   },
 });

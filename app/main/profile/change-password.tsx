@@ -3,7 +3,6 @@ import { Stack, router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -22,6 +21,7 @@ import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { formatErrorMessage } from '../../../lib/errors';
 import {
   validateNoSqlInjection,
   validatePassword,
@@ -44,11 +44,6 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -74,52 +69,27 @@ export default function ChangePassword() {
   const handleChangePassword = useCallback(async () => {
     clearErrors();
 
-    const newPasswordRequired = validateRequired(newPassword, 'New password');
-    if (!newPasswordRequired.isValid) {
-      setNewPasswordError(newPasswordRequired.error ?? 'New password is required.');
-      return;
-    }
-
-    const confirmRequired = validateRequired(confirmPassword, 'Confirm new password');
-    if (!confirmRequired.isValid) {
-      setConfirmPasswordError(confirmRequired.error ?? 'Confirm new password is required.');
-      return;
-    }
-
-    const newPasswordSqlCheck = validateNoSqlInjection(newPassword, 'New password');
-    if (!newPasswordSqlCheck.isValid) {
-      setNewPasswordError(newPasswordSqlCheck.error ?? 'New password contains invalid characters.');
-      return;
-    }
-
-    const confirmSqlCheck = validateNoSqlInjection(confirmPassword, 'Confirm new password');
-    if (!confirmSqlCheck.isValid) {
-      setConfirmPasswordError(
-        confirmSqlCheck.error ?? 'Confirm new password contains invalid characters.',
-      );
-      return;
-    }
-
-    const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.isValid) {
-      setNewPasswordError(passwordValidation.error ?? 'Password is invalid.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match.');
-      return;
-    }
-
-    setLoading(true);
-
     try {
+      validateRequired(newPassword, 'New password');
+      validateNoSqlInjection(newPassword, 'New password');
+      validatePassword(newPassword);
+
+      validateRequired(confirmPassword, 'Confirm new password');
+      validateNoSqlInjection(confirmPassword, 'Confirm new password');
+
+      if (newPassword !== confirmPassword) {
+        setConfirmPasswordError('Passwords do not match.');
+        return;
+      }
+
+      setLoading(true);
+
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (updateError) {
-        setNotice({ type: 'error', text: updateError.message });
+        setNotice({ type: 'error', text: formatErrorMessage(updateError.message) });
         return;
       }
 
@@ -134,6 +104,22 @@ export default function ChangePassword() {
       setTimeout(() => {
         router.back();
       }, 1500);
+    } catch (err: any) {
+      if (err.name === 'ValidationError') {
+        if (err.message.startsWith('Confirm new password')) {
+          setConfirmPasswordError(err.message);
+        } else if (err.message.startsWith('New password') || err.message.startsWith('Password')) {
+          setNewPasswordError(err.message);
+        } else {
+          setNotice({ type: 'error', text: err.message });
+        }
+        return;
+      }
+
+      setNotice({
+        type: 'error',
+        text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
+      });
     } finally {
       setLoading(false);
     }
@@ -141,7 +127,9 @@ export default function ChangePassword() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       {/* Static header */}
       <View style={styles.topBar}>
@@ -236,6 +224,8 @@ export default function ChangePassword() {
             variant="standard"
             disabled={loading}
           />
+
+          <Spacer size="large" />
         </View>
       </KeyboardAvoidingView>
     </View>

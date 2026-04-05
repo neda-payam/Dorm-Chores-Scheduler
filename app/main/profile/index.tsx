@@ -1,9 +1,9 @@
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -26,17 +26,11 @@ import { supabase } from '../../../lib/supabase';
 const GRADIENT_THRESHOLD = 24;
 
 export default function Profile() {
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [accountType, setAccountType] = useState('');
 
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -88,7 +82,9 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       <View style={styles.topBar}>
         <HeaderBackButton iconName="times" />
@@ -165,17 +161,30 @@ export default function Profile() {
               onPress={() => router.push('/main/profile/delete-account')}
             />
             <ListItem
-              title="Log out"
-              subtitle="Log out of your account"
+              title="Logout"
+              subtitle="Sign out of your account"
               iconName="sign-out-alt"
-              onPress={() => {}}
+              onPress={async () => {
+                try {
+                  await supabase.auth.signOut();
+                  router.replace('/auth/signin');
+                } catch (error) {
+                  console.error('Failed to log out:', error);
+                }
+              }}
             />
 
             <Spacer size="large" />
 
             <Text style={styles.versionHeading}>Your app version</Text>
             <Spacer size="small" />
-            <Text style={styles.body}>v1.0.0 (build number)</Text>
+            <Text style={styles.body}>
+              v{Constants.expoConfig?.version || '1.0.0'} (
+              {Platform.OS === 'ios'
+                ? Constants.expoConfig?.ios?.buildNumber || '1'
+                : Constants.expoConfig?.android?.versionCode || '1'}
+              )
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

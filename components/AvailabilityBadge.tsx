@@ -23,7 +23,7 @@
  * - style?: ViewStyle - Custom styles for the outer wrapper
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Modal,
@@ -35,6 +35,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { COLOURS } from '../constants/colours';
+import { getAvailabilityStatus, setAvailabilityStatus } from '../lib/availability';
 
 const AVAILABLE_BG = '#DDF7D2';
 const AVAILABLE_TEXT = '#1F5800';
@@ -64,15 +66,24 @@ export default function AvailabilityBadge({
   readOnly = false,
   style,
 }: AvailabilityBadgeProps) {
+  const [isHydrating, setIsHydrating] = useState(true);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [badgeLayout, setBadgeLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const badgeRef = useRef<View>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-6)).current;
 
-  const backgroundColor = isAvailable ? AVAILABLE_BG : UNAVAILABLE_BG;
-  const textColor = isAvailable ? AVAILABLE_TEXT : UNAVAILABLE_TEXT;
-  const label = isAvailable ? 'Available' : 'Unavailable';
+  const backgroundColor = isHydrating
+    ? COLOURS.info.background
+    : isAvailable
+      ? AVAILABLE_BG
+      : UNAVAILABLE_BG;
+  const textColor = isHydrating
+    ? COLOURS.info.text
+    : isAvailable
+      ? AVAILABLE_TEXT
+      : UNAVAILABLE_TEXT;
+  const label = isHydrating ? 'Loading' : isAvailable ? 'Available' : 'Unavailable';
 
   const openDropdown = () => {
     badgeRef.current?.measureInWindow((x, y, width, height) => {
@@ -112,17 +123,42 @@ export default function AvailabilityBadge({
 
   const handleSelect = (value: boolean) => {
     onChange(value);
+    setAvailabilityStatus(value ? 'available' : 'unavailable').catch((error) => {
+      console.warn('Failed to save availability status:', error);
+    });
     closeDropdown();
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const hydrateAvailability = async () => {
+      try {
+        const status = await getAvailabilityStatus();
+        if (!mounted) return;
+        onChange(status === 'available');
+      } catch (error) {
+        console.warn('Failed to load availability status:', error);
+      } finally {
+        if (mounted) setIsHydrating(false);
+      }
+    };
+
+    hydrateAvailability();
+
+    return () => {
+      mounted = false;
+    };
+  }, [onChange]);
 
   return (
     <>
       {/* Badge button */}
       <View ref={badgeRef} style={[styles.wrapper, style]}>
         <TouchableOpacity
-          onPress={readOnly ? undefined : openDropdown}
-          activeOpacity={readOnly ? 1 : 0.8}
-          disabled={readOnly}
+          onPress={readOnly || isHydrating ? undefined : openDropdown}
+          activeOpacity={readOnly || isHydrating ? 1 : 0.8}
+          disabled={readOnly || isHydrating}
           style={[styles.badge, { backgroundColor }]}
           accessibilityRole={readOnly ? 'text' : 'button'}
           accessibilityLabel={`Availability status: ${label}${readOnly ? '' : '. Tap to change.'}`}

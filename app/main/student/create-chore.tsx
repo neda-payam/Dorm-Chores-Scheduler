@@ -24,6 +24,9 @@ import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { createChore } from '../../../lib/chores';
+import { getActiveDormId } from '../../../lib/dorms';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -45,7 +48,11 @@ const FREQUENCY_OPTIONS: { key: string; label: string }[] = [
 
 export default function CreateChore() {
   const [title, setTitle] = useState('');
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [description, setDescription] = useState('');
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
+  const [dueWithinDays, setDueWithinDays] = useState('7');
+  const [dueWithinError, setDueWithinError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(CATEGORIES[0].key);
   const [isRecurring, setIsRecurring] = useState<boolean | null>(false);
   const [selectedFrequency, setSelectedFrequency] = useState<string | null>(null);
@@ -86,29 +93,68 @@ export default function CreateChore() {
     if (!value) setSelectedFrequency(null);
   };
 
-  const handleCreate = useCallback(() => {
+  const handleCreate = useCallback(async () => {
     setNotice(null);
+    setTitleError(null);
+    setDescriptionError(null);
+    setDueWithinError(null);
 
-    if (!title.trim()) {
-      setNotice({ type: 'error', text: 'Please enter a chore title.' });
-      return;
-    }
-    if (!selectedCategory) {
-      setNotice({ type: 'error', text: 'Please select a category.' });
-      return;
-    }
-    if (isRecurring === null) {
-      setNotice({ type: 'error', text: 'Please specify whether this chore repeats.' });
-      return;
-    }
-    if (isRecurring && !selectedFrequency) {
-      setNotice({ type: 'error', text: 'Please select how often this chore repeats.' });
-      return;
+    const titleTrimmed = title.trim();
+    const descriptionTrimmed = description.trim();
+    let hasError = false;
+
+    if (!titleTrimmed) {
+      setTitleError('Please enter a chore title.');
+      hasError = true;
+    } else if (titleTrimmed.length < 3 || titleTrimmed.length > 50) {
+      setTitleError('Chore title must be between 3 and 50 characters.');
+      hasError = true;
     }
 
-    // TODO: submit chore to API
-    router.push('/main/student/chores');
-  }, [title, selectedCategory, isRecurring, selectedFrequency]);
+    if (descriptionTrimmed.length > 200) {
+      setDescriptionError('Description must be under 200 characters.');
+      hasError = true;
+    }
+
+    const dwdParsed = parseInt(dueWithinDays, 10);
+    if (isNaN(dwdParsed) || dwdParsed <= 0 || dwdParsed > 365) {
+      setDueWithinError('Due within days must be between 1 and 365.');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    try {
+      // 1. Get the current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      // 2. We need the user's active dorm
+      const activeDormId = await getActiveDormId();
+      if (!activeDormId) {
+        throw new Error('Could not find which dorm you belong to.');
+      }
+
+      // 3. Create the chore
+      await createChore(activeDormId, {
+        title: titleTrimmed,
+        description: descriptionTrimmed,
+        status: 'assigned',
+        meta: {
+          category: selectedCategory,
+          isRecurring: isRecurring || false,
+          frequency: selectedFrequency,
+          due_in_days: dwdParsed,
+        },
+      });
+
+      router.push('/main/student/chores');
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to create chore' });
+    }
+  }, [title, description, dueWithinDays, isRecurring, selectedCategory, selectedFrequency]);
 
   return (
     <View style={styles.container}>
@@ -151,7 +197,16 @@ export default function CreateChore() {
             <Spacer size="medium" />
 
             <Text style={styles.inputLabel}>Title</Text>
-            <Input value={title} onChangeText={setTitle} placeholder="e.g. Take out the bins" />
+            <Input
+              value={title}
+              onChangeText={setTitle}
+              placeholder="e.g. Take out the bins"
+              hasError={!!titleError}
+              onBlur={() => setTitleError(null)}
+            />
+            {titleError && (
+              <InlineNotification type="error" text={titleError} style={{ marginTop: 4 }} />
+            )}
 
             <Spacer size="medium" />
 
@@ -165,8 +220,27 @@ export default function CreateChore() {
               placeholder="Any extra details..."
               multiline
               numberOfLines={3}
+              hasError={!!descriptionError}
+              onBlur={() => setDescriptionError(null)}
             />
+            {descriptionError && (
+              <InlineNotification type="error" text={descriptionError} style={{ marginTop: 4 }} />
+            )}
 
+            <Spacer size="medium" />
+
+            <Text style={styles.inputLabel}>Due Within (Days)</Text>
+            <Input
+              value={dueWithinDays}
+              onChangeText={setDueWithinDays}
+              placeholder="e.g. 7"
+              keyboardType="number-pad"
+              hasError={!!dueWithinError}
+              onBlur={() => setDueWithinError(null)}
+            />
+            {dueWithinError && (
+              <InlineNotification type="error" text={dueWithinError} style={{ marginTop: 4 }} />
+            )}
             <Spacer size="medium" />
 
             <Text style={styles.inputLabel}>Category</Text>

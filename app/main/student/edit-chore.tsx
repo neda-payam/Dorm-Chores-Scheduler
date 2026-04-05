@@ -1,7 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   BackHandler,
   Keyboard,
@@ -16,7 +18,6 @@ import {
 } from 'react-native';
 
 import Button from '../../../components/Button';
-import CategoryPicker, { CategoryOption } from '../../../components/CategoryPicker';
 import FilterChip from '../../../components/FilterChip';
 import HeaderBackButton from '../../../components/HeaderBackButton';
 import InlineButton from '../../../components/InlineButton';
@@ -24,17 +25,9 @@ import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { Chore, deleteChore, getChoreById, updateChore } from '../../../lib/chores';
 
 const GRADIENT_THRESHOLD = 24;
-
-const CATEGORIES: CategoryOption[] = [
-  { key: 'kitchen', label: 'Kitchen', iconName: 'utensils' },
-  { key: 'bathroom', label: 'Bathroom', iconName: 'bath' },
-  { key: 'corridor', label: 'Corridor', iconName: 'house-user' },
-  { key: 'bins', label: 'Bins', iconName: 'trash' },
-  { key: 'floors', label: 'Floors', iconName: 'broom' },
-  { key: 'other', label: 'Other', iconName: 'ellipsis-h' },
-];
 
 const FREQUENCY_OPTIONS: { key: string; label: string }[] = [
   { key: 'daily', label: 'Daily' },
@@ -43,23 +36,23 @@ const FREQUENCY_OPTIONS: { key: string; label: string }[] = [
   { key: 'monthly', label: 'Monthly' },
 ];
 
-// TODO: Replace with data fetched from API based on chore ID passed via route params
-const EXISTING_CHORE = {
-  title: 'Take out the bins',
-  description: 'Make sure all bags are tied before taking them out',
-  category: 'bins',
-  isRecurring: true,
-  frequency: 'weekly',
-};
-
 export default function EditChore() {
-  const [title, setTitle] = useState(EXISTING_CHORE.title);
-  const [description, setDescription] = useState(EXISTING_CHORE.description);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(EXISTING_CHORE.category);
-  const [isRecurring, setIsRecurring] = useState<boolean | null>(EXISTING_CHORE.isRecurring);
-  const [selectedFrequency, setSelectedFrequency] = useState<string | null>(
-    EXISTING_CHORE.frequency,
-  );
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [loading, setLoading] = useState(true);
+  const [chore, setChore] = useState<Chore | null>(null);
+
+  const [title, setTitle] = useState('');
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
+  const [dueWithinDays, setDueWithinDays] = useState('7');
+  const [dueWithinError, setDueWithinError] = useState<string | null>(null);
+  const [isRecurring, setIsRecurring] = useState<boolean | null>(null);
+  const [selectedFrequency, setSelectedFrequency] = useState<string | null>(null);
+  const [frequencyError, setFrequencyError] = useState<string | null>(null);
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [notice, setNotice] = useState<{
@@ -68,6 +61,35 @@ export default function EditChore() {
   } | null>(null);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  const loadChore = useCallback(async () => {
+    const fetchId = Array.isArray(id) ? id[0] : id;
+    if (!fetchId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await getChoreById(fetchId);
+      if (!data) throw new Error('Chore not found');
+      setChore(data);
+      setTitle(data.title);
+      setDescription(data.description || '');
+      setDueWithinDays(data.meta?.due_in_days?.toString() || '7');
+      const recurring = !!data.meta?.isRecurring;
+      setIsRecurring(recurring);
+      setSelectedFrequency(recurring ? data.meta?.frequency || null : null);
+    } catch (e) {
+      console.error('Failed to load chore:', e);
+      setNotice({ type: 'error', text: 'Could not load chore details. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    loadChore();
+  }, [loadChore]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -99,37 +121,83 @@ export default function EditChore() {
 
   const handleRecurringToggle = (value: boolean) => {
     setIsRecurring(value);
-    if (!value) setSelectedFrequency(null);
+    if (!value) {
+      setSelectedFrequency(null);
+      setFrequencyError(null);
+    }
   };
 
-  const handleSave = useCallback(() => {
+  const handleSave = async () => {
     setNotice(null);
+    setTitleError(null);
+    setDescriptionError(null);
+    setDueWithinError(null);
+    setFrequencyError(null);
 
-    if (!title.trim()) {
-      setNotice({ type: 'error', text: 'Please enter a chore title' });
-      return;
-    }
-    if (!selectedCategory) {
-      setNotice({ type: 'error', text: 'Please select a category' });
-      return;
-    }
-    if (isRecurring === null) {
-      setNotice({ type: 'error', text: 'Please specify whether this chore repeats' });
-      return;
-    }
-    if (isRecurring && !selectedFrequency) {
-      setNotice({ type: 'error', text: 'Please select how often this chore repeats' });
-      return;
+    const titleTrimmed = title.trim();
+    const descriptionTrimmed = description.trim();
+    let hasError = false;
+
+    if (!titleTrimmed) {
+      setTitleError('Please enter a chore title');
+      hasError = true;
+    } else if (titleTrimmed.length < 3 || titleTrimmed.length > 50) {
+      setTitleError('Chore title must be between 3 and 50 characters');
+      hasError = true;
     }
 
-    // TODO: submit updated chore to API
-    router.push('/main/student/chores');
-  }, [title, selectedCategory, isRecurring, selectedFrequency]);
+    if (descriptionTrimmed.length > 200) {
+      setDescriptionError('Description must be under 200 characters');
+      hasError = true;
+    }
 
-  const handleDeleteConfirmed = useCallback(() => {
-    // TODO: delete chore via API
-    router.push('/main/student/chores');
-  }, []);
+    const dwdParsed = parseInt(dueWithinDays, 10);
+    if (isNaN(dwdParsed) || dwdParsed <= 0 || dwdParsed > 365) {
+      setDueWithinError('Due within days must be between 1 and 365.');
+      hasError = true;
+    }
+
+    if (isRecurring === true && !selectedFrequency) {
+      setFrequencyError('Please select a repeat frequency.');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    if (!id) return;
+
+    setLoadingSave(true);
+    try {
+      await updateChore(id, {
+        title: titleTrimmed,
+        description: descriptionTrimmed || undefined,
+        meta: {
+          due_in_days: dwdParsed,
+          isRecurring: isRecurring || false,
+          frequency: isRecurring ? selectedFrequency : null,
+        },
+      });
+      router.push('/main/student/chores');
+    } catch (e: any) {
+      setNotice({ type: 'error', text: e.message || 'Failed to update chore' });
+    } finally {
+      setLoadingSave(false);
+    }
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!id) return;
+
+    setLoadingDelete(true);
+    try {
+      await deleteChore(id);
+      router.push('/main/student/chores');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to delete chore');
+    } finally {
+      setLoadingDelete(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -167,137 +235,184 @@ export default function EditChore() {
           scrollEventThrottle={16}
         >
           <View style={styles.content}>
-            <Text style={styles.heading}>Edit Chore</Text>
-
-            <Spacer size="small" />
-
-            <Text style={styles.subheading}>
-              Changes will be visible to all members of the dorm
-            </Text>
-
-            <Spacer size="large" />
-
-            <Text style={styles.inputLabel}>Title</Text>
-            <Input value={title} onChangeText={setTitle} placeholder="e.g. Take out the bins" />
-
-            <Spacer size="medium" />
-
-            <Text style={styles.inputLabel}>
-              Description <Text style={styles.optional}>(optional)</Text>
-            </Text>
-            <Input
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Any extra details..."
-              multiline
-              numberOfLines={3}
-            />
-
-            <Spacer size="medium" />
-
-            <Text style={styles.inputLabel}>Category</Text>
-
-            <Spacer size="small" />
-
-            <CategoryPicker
-              options={CATEGORIES}
-              selected={selectedCategory}
-              onSelect={setSelectedCategory}
-            />
-
-            <Spacer size="medium" />
-
-            <Text style={styles.inputLabel}>Does this chore repeat?</Text>
-
-            <Spacer size="small" />
-
-            <View style={styles.chipRow}>
-              <FilterChip
-                label="Yes"
-                active={isRecurring === true}
-                onPress={() => handleRecurringToggle(true)}
-              />
-              <FilterChip
-                label="No"
-                active={isRecurring === false}
-                onPress={() => handleRecurringToggle(false)}
-              />
-            </View>
-
-            {isRecurring && (
+            {loading ? (
+              <ActivityIndicator size="large" color={COLOURS.primary} />
+            ) : chore ? (
               <>
-                <Spacer size="medium" />
-                <Text style={styles.inputLabel}>How often?</Text>
+                <Text style={styles.heading}>Edit Chore</Text>
+
                 <Spacer size="small" />
+
+                <Text style={styles.subheading}>
+                  Changes will be visible to all members of the dorm
+                </Text>
+
+                <Spacer size="large" />
+
+                <Text style={styles.inputLabel}>Title</Text>
+                <Input
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="e.g. Take out the bins"
+                  hasError={!!titleError}
+                  onBlur={() => setTitleError(null)}
+                />
+                {titleError && (
+                  <InlineNotification type="error" text={titleError} style={{ marginTop: 4 }} />
+                )}
+
+                <Spacer size="medium" />
+
+                <Text style={styles.inputLabel}>
+                  Description <Text style={styles.optional}>(optional)</Text>
+                </Text>
+                <Input
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Any extra details..."
+                  multiline
+                  numberOfLines={3}
+                  hasError={!!descriptionError}
+                  onBlur={() => setDescriptionError(null)}
+                />
+                {descriptionError && (
+                  <InlineNotification
+                    type="error"
+                    text={descriptionError}
+                    style={{ marginTop: 4 }}
+                  />
+                )}
+
+                <Spacer size="medium" />
+
+                <Text style={styles.inputLabel}>Due Within (Days)</Text>
+                <Input
+                  value={dueWithinDays}
+                  onChangeText={setDueWithinDays}
+                  placeholder="e.g. 7"
+                  keyboardType="number-pad"
+                  hasError={!!dueWithinError}
+                  onBlur={() => setDueWithinError(null)}
+                />
+                {dueWithinError && (
+                  <InlineNotification type="error" text={dueWithinError} style={{ marginTop: 4 }} />
+                )}
+                <Spacer size="medium" />
+
+                <Spacer size="medium" />
+
+                <Text style={styles.inputLabel}>Does this chore repeat?</Text>
+
+                <Spacer size="small" />
+
                 <View style={styles.chipRow}>
-                  {FREQUENCY_OPTIONS.map((option) => (
-                    <FilterChip
-                      key={option.key}
-                      label={option.label}
-                      active={selectedFrequency === option.key}
-                      onPress={() => setSelectedFrequency(option.key)}
-                    />
-                  ))}
+                  <FilterChip
+                    label="Yes"
+                    active={isRecurring === true}
+                    onPress={() => handleRecurringToggle(true)}
+                  />
+                  <FilterChip
+                    label="No"
+                    active={isRecurring === false}
+                    onPress={() => handleRecurringToggle(false)}
+                  />
                 </View>
-              </>
-            )}
 
-            <Spacer size="large" />
+                {isRecurring && (
+                  <>
+                    <Spacer size="medium" />
+                    <Text style={styles.inputLabel}>How often?</Text>
+                    <Spacer size="small" />
+                    <View style={styles.chipRow}>
+                      {FREQUENCY_OPTIONS.map((option) => (
+                        <FilterChip
+                          key={option.key}
+                          label={option.label}
+                          active={selectedFrequency === option.key}
+                          onPress={() => {
+                            setSelectedFrequency(option.key);
+                            setFrequencyError(null);
+                          }}
+                        />
+                      ))}
+                    </View>
+                    {frequencyError && (
+                      <>
+                        <Spacer size="small" />
+                        <InlineNotification type="error" text={frequencyError} />
+                      </>
+                    )}
+                  </>
+                )}
 
-            <Button title="Save changes" onPress={handleSave} variant="standard" />
-
-            {notice && (
-              <>
-                <Spacer size="medium" />
-                <InlineNotification type={notice.type} text={notice.text} />
-              </>
-            )}
-
-            <Spacer size="large" />
-
-            <View style={styles.divider} />
-
-            <Spacer size="large" />
-
-            <Text style={styles.inputLabel}>Delete chore</Text>
-
-            <Spacer size="small" />
-
-            <Text style={styles.subheading}>This is permanent and cannot be undone</Text>
-
-            <Spacer size="medium" />
-
-            {confirmingDelete ? (
-              <>
-                <Text style={styles.inputLabel}>Are you sure?</Text>
-
-                <Spacer size="small" />
-
-                <Text style={styles.subheading}>This action cannot be reversed once confirmed</Text>
-
-                <Spacer size="medium" />
+                <Spacer size="large" />
 
                 <Button
-                  title="Yes, delete chore"
-                  onPress={handleDeleteConfirmed}
-                  variant="danger"
+                  title={loadingSave ? 'Saving...' : 'Save changes'}
+                  onPress={handleSave}
+                  variant="standard"
+                  disabled={loadingSave}
                 />
+
+                {notice && (
+                  <>
+                    <Spacer size="medium" />
+                    <InlineNotification type={notice.type} text={notice.text} />
+                  </>
+                )}
+
+                <Spacer size="large" />
+
+                <View style={styles.divider} />
+
+                <Spacer size="large" />
+
+                <Text style={styles.inputLabel}>Delete chore</Text>
+
+                <Spacer size="small" />
+
+                <Text style={styles.subheading}>This is permanent and cannot be undone</Text>
+
+                <Spacer size="medium" />
+
+                {confirmingDelete ? (
+                  <>
+                    <Text style={styles.inputLabel}>Are you sure?</Text>
+
+                    <Spacer size="small" />
+
+                    <Text style={styles.subheading}>
+                      This action cannot be reversed once confirmed
+                    </Text>
+
+                    <Spacer size="medium" />
+
+                    <Button
+                      title={loadingDelete ? 'Deleting...' : 'Yes, delete chore'}
+                      onPress={handleDeleteConfirmed}
+                      variant="danger"
+                      disabled={loadingDelete}
+                    />
+                  </>
+                ) : (
+                  <Button
+                    title="Delete chore"
+                    onPress={() => setConfirmingDelete(true)}
+                    variant="danger"
+                  />
+                )}
+
+                <Spacer size="large" />
+
+                <Text style={styles.centerText}>
+                  Changed your mind? <InlineButton title="Go back" onPress={() => router.back()} />
+                </Text>
+
+                <Spacer size="large" />
               </>
             ) : (
-              <Button
-                title="Delete chore"
-                onPress={() => setConfirmingDelete(true)}
-                variant="danger"
-              />
+              <Text style={styles.errorText}>Chore not found.</Text>
             )}
-
-            <Spacer size="large" />
-
-            <Text style={styles.centerText}>
-              Changed your mind? <InlineButton title="Go back" onPress={() => router.back()} />
-            </Text>
-
-            <Spacer size="large" />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -374,5 +489,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLOURS.black,
     textAlign: 'center',
+  },
+  errorText: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    color: COLOURS.error.text,
+    textAlign: 'center',
+    marginTop: 40,
   },
 });

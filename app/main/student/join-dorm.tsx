@@ -22,6 +22,8 @@ import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { joinDorm, setActiveDormId } from '../../../lib/dorms';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -72,42 +74,68 @@ export default function JoinDorm() {
     setNotice(null);
     setDormPreview(null);
 
-    if (!inviteCode.trim()) {
+    const codeTrimmed = inviteCode.trim();
+
+    if (!codeTrimmed) {
       setNotice({ type: 'error', text: 'Please enter an invite code.' });
+      return;
+    }
+    if (codeTrimmed.length !== 6) {
+      setNotice({ type: 'error', text: 'Join code must be exactly 6 characters.' });
       return;
     }
 
     setIsLookingUp(true);
 
-    // TODO: look up dorm by invite code via API
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) throw new Error('User not authenticated.');
 
-    const mockResult: DormPreview = {
-      id: 'dorm-abc-123',
-      name: 'Maple House',
-      memberCount: 3,
-      maxMembers: 5,
-    };
+      // Look up dorm without joining to preview first.
+      const { data: dorm, error: dormError } = await supabase
+        .from('dorms')
+        .select('*')
+        .eq('join_code', codeTrimmed.toUpperCase())
+        .maybeSingle();
 
-    setIsLookingUp(false);
+      if (dormError || !dorm) {
+        throw new Error('Invalid join code or dorm not found.');
+      }
 
-    if (!mockResult) {
+      setDormPreview({
+        id: dorm.id,
+        name: dorm.name,
+        memberCount: 0,
+        maxMembers: 10,
+      });
+      setNotice({ type: 'success', text: `Found ${dorm.name}! Click Join to enter.` });
+    } catch (err: any) {
       setNotice({
         type: 'error',
-        text: 'No dorm found with that invite code. Please check and try again.',
+        text: err.message || 'Failed to find dorm. Please check your code.',
       });
-      return;
+    } finally {
+      setIsLookingUp(false);
     }
-
-    setDormPreview(mockResult);
   }, [inviteCode]);
 
-  const handleJoin = useCallback(() => {
+  const handleJoin = useCallback(async () => {
     if (!dormPreview) return;
+    setNotice(null);
 
-    // TODO: join dorm via API using dormPreview.id
-    router.push('/main/student/dorms');
-  }, [dormPreview]);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) throw new Error('Not authenticated.');
+
+      // We use the invite code we verified earlier to join
+      const joined = await joinDorm(userData.user.id, inviteCode);
+      await setActiveDormId(joined.dorm_id);
+
+      router.push('/main/student/dorms');
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to join dorm' });
+    }
+  }, [dormPreview, inviteCode]);
 
   return (
     <View style={styles.container}>

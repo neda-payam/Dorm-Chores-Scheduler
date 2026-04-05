@@ -18,8 +18,8 @@ import Input from '../../components/Input';
 import Spacer from '../../components/Spacer';
 
 import { COLOURS } from '../../constants/colours';
-import { supabase } from '../../lib/supabase';
-import { normaliseEmail, validateNoSqlInjection, validateRequired } from '../../lib/validation';
+import { getUserRole, signInUser } from '../../lib/auth';
+import { UnauthorisedError, ValidationError, formatErrorMessage } from '../../lib/errors';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -77,83 +77,34 @@ export default function SignIn() {
   const handleAction = useCallback(async () => {
     clearErrors();
 
-    const emailRequired = validateRequired(email, 'Email address');
-    if (!emailRequired.isValid) {
-      setFieldError(emailRequired.error!);
-      return;
-    }
+    try {
+      const data = await signInUser(email, password);
 
-    const passwordRequired = validateRequired(password, 'Password');
-    if (!passwordRequired.isValid) {
-      setFieldError(passwordRequired.error!);
-      return;
-    }
+      const userId = data.user?.id;
+      if (!userId) {
+        setNotice({ type: 'error', text: 'Unable to find signed in user.' });
+        return;
+      }
 
-    const emailSqlCheck = validateNoSqlInjection(email, 'Email address');
-    if (!emailSqlCheck.isValid) {
-      setFieldError(emailSqlCheck.error!);
-      return;
-    }
+      setNotice({ type: 'success', text: 'Signed in successfully!' });
 
-    const passwordSqlCheck = validateNoSqlInjection(password, 'Password');
-    if (!passwordSqlCheck.isValid) {
-      setFieldError(passwordSqlCheck.error!);
-      return;
-    }
-
-    const normalisedEmail = normaliseEmail(email);
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: normalisedEmail,
-      password,
-    });
-
-    if (error) {
-      setNotice({ type: 'error', text: error.message });
-      return;
-    }
-
-    const userId = data.user?.id;
-
-    if (!userId) {
-      setNotice({
-        type: 'error',
-        text: 'Unable to find signed in user.',
-      });
-      return;
-    }
-
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_manager')
-      .eq('id', userId)
-      .single();
-
-    if (profileError) {
-      setNotice({
-        type: 'error',
-        text: profileError.message,
-      });
-      return;
-    }
-
-    setNotice({
-      type: 'success',
-      text: 'Signed in successfully!',
-    });
-
-    if (!profileData) {
-      setNotice({
-        type: 'error',
-        text: 'Unable to load user profile.',
-      });
-      return;
-    }
-
-    if (profileData.is_manager) {
-      router.push('/main/manager/dashboard');
-    } else {
-      router.push('/main/student/home');
+      const role = await getUserRole(userId);
+      if (role === 'manager') {
+        router.push('/main/manager/dashboard');
+      } else {
+        router.push('/main/student/home');
+      }
+    } catch (err: any) {
+      if (err instanceof ValidationError) {
+        setFieldError(err.message);
+      } else if (err instanceof UnauthorisedError) {
+        setNotice({ type: 'error', text: err.message });
+      } else {
+        setNotice({
+          type: 'error',
+          text: err.message ? formatErrorMessage(err.message) : 'An unexpected error occurred.',
+        });
+      }
     }
   }, [email, password]);
 

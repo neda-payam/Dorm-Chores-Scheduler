@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack, router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   BackHandler,
   Keyboard,
@@ -27,6 +28,7 @@ import ProfilePicture from '../../../components/ProfilePicture';
 import SortDropdown from '../../../components/SortDropdown';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { getActiveDormId } from '../../../lib/dorms';
 
 const FILTER_OPTIONS = ['All', 'Mine', 'Completed'];
 const SORT_OPTIONS = ['Due Date'];
@@ -87,6 +89,7 @@ export default function Repairs() {
   const [isAvailable, setIsAvailable] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
   const [sortBy, setSortBy] = useState('Due Date');
+  const [isLoading, setIsLoading] = useState(true);
   const isConnected = true; // Defines whether the user is connected to a manager (i.e. has access to repair requests) or not. Set to false to show the "not connected" state.
   const qrValue = 'dorm-chores-scheduler:manager-connect:sample';
 
@@ -96,6 +99,28 @@ export default function Repairs() {
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
   const navGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  const loadRepairsState = async () => {
+    setIsLoading(true);
+    try {
+      const activeDormId = await getActiveDormId();
+
+      if (!activeDormId) {
+        router.replace('/main/student/dorms');
+        return;
+      }
+    } catch (error) {
+      console.warn('Failed to load repairs state', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRepairsState();
+    }, []),
+  );
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -192,7 +217,18 @@ export default function Repairs() {
               <>
                 <Text style={styles.title}>Repair requests</Text>
 
-                {isEmpty ? (
+                {isLoading ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginTop: 100,
+                    }}
+                  >
+                    <ActivityIndicator size="large" color={COLOURS.black} />
+                  </View>
+                ) : isEmpty ? (
                   <>
                     <Spacer size="large" />
 

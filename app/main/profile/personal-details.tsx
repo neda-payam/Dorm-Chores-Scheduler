@@ -3,7 +3,6 @@ import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -30,11 +29,6 @@ export default function PersonalDetails() {
   const [email, setEmail] = useState('');
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
 
   useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -86,7 +80,9 @@ export default function PersonalDetails() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       <View style={styles.topBar}>
         <HeaderBackButton iconName="chevron-left" />
