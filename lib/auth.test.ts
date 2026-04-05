@@ -214,6 +214,7 @@ describe('Authentication Functions', () => {
         id: 'mock-user-id',
         email: 'test@example.com',
         role: 'manager',
+        avatarUrl: null,
       });
     });
 

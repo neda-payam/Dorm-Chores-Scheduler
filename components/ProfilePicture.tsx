@@ -83,7 +83,9 @@ export default function ProfilePicture({
       if (user?.avatarUrl) {
         setInternalUri(user.avatarUrl);
       }
-    } catch (e) {}
+    } catch {
+      // Ignored
+    }
   }
 
   const handleCameraPress = async () => {

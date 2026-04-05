@@ -4,4 +4,7 @@ module.exports = {
   roots: ['<rootDir>/lib'],
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleNameMapper: {
+    '^expo-file-system$': '<rootDir>/__mocks__/expo-file-system.js',
+  },
 };
