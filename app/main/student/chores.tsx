@@ -1,7 +1,10 @@
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack, router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   BackHandler,
   Keyboard,
@@ -26,9 +29,14 @@ import ProfilePicture from '../../../components/ProfilePicture';
 import SortDropdown from '../../../components/SortDropdown';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { Chore, getChores } from '../../../lib/chores';
+import { getActiveDormId } from '../../../lib/dorms';
+import { supabase } from '../../../lib/supabase';
 
-const FILTER_OPTIONS = ['All', 'Mine', 'Recurring', 'Completed'];
-const SORT_OPTIONS = ['Due Date', 'Alphabetical', 'Date Created'];
+dayjs.extend(relativeTime);
+
+const FILTER_OPTIONS = ['All', 'Me', 'Completed'];
+const SORT_OPTIONS = ['Date Created', 'Alphabetical'];
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -57,59 +65,16 @@ const NAV_ITEMS: NavBarItem[] = [
   },
 ];
 
-type ChoreSummary = {
-  id: string;
-  title: string;
-  iconName: keyof typeof FontAwesome5.glyphMap;
-  subtitle: string;
-  overdue: boolean;
-};
-
-const CHORES: ChoreSummary[] = [
-  {
-    id: '1',
-    title: 'Take out the bins',
-    iconName: 'trash',
-    subtitle: 'You - Due 1 hour ago',
-    overdue: true,
-  },
-  {
-    id: '2',
-    title: 'Clean the common room',
-    iconName: 'broom',
-    subtitle: 'You - Due in 3 days',
-    overdue: false,
-  },
-  {
-    id: '3',
-    title: 'Tidy the hallway',
-    iconName: 'house-user',
-    subtitle: 'Person 2 - Due 6 years ago',
-    overdue: true,
-  },
-  {
-    id: '4',
-    title: 'Mop the kitchen',
-    iconName: 'broom',
-    subtitle: 'Person 2 - Due in 6 days',
-    overdue: false,
-  },
-  {
-    id: '5',
-    title: 'Clean the bathrooms',
-    iconName: 'toilet',
-    subtitle: 'Person 3 - Due in 1 week',
-    overdue: false,
-  },
-];
-
 const GRADIENT_THRESHOLD = 24;
 
 export default function Chores() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
-  const [sortBy, setSortBy] = useState('Due Date');
+  const [sortBy, setSortBy] = useState('Date Created');
+  const [fetchedChores, setFetchedChores] = useState<Chore[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -117,6 +82,36 @@ export default function Chores() {
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
   const navGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  const loadChores = async () => {
+    setIsLoading(true);
+    try {
+      const activeDormId = await getActiveDormId();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+
+      if (!activeDormId) {
+        router.replace('/main/student/dorms');
+        return;
+      }
+
+      const data = await getChores(activeDormId);
+      setFetchedChores(data);
+    } catch (error) {
+      console.warn('Failed to load chores', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChores();
+    }, []),
+  );
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -161,7 +156,84 @@ export default function Chores() {
     ...item,
   }));
 
-  const isEmpty = CHORES.length === 0;
+  type ChoreSummary = {
+    id: string;
+    title: string;
+    iconName: any;
+    subtitle: string;
+    overdue: boolean;
+    status?: string;
+    assignedTo?: string | null;
+  };
+
+  const allChoresToDisplay: ChoreSummary[] = fetchedChores.map((c) => {
+    let icon = 'broom';
+    switch (c.meta?.category) {
+      case 'kitchen':
+        icon = 'utensils';
+        break;
+      case 'bathroom':
+        icon = 'bath';
+        break;
+      case 'corridor':
+        icon = 'house-user';
+        break;
+      case 'bins':
+        icon = 'trash';
+        break;
+      case 'floors':
+        icon = 'broom';
+        break;
+      case 'other':
+        icon = 'ellipsis-h';
+        break;
+      default:
+        break;
+    }
+
+    return {
+      id: c.id,
+      title: c.title,
+      iconName: icon,
+      subtitle: c.description || 'No description',
+      overdue: c.status === 'overdue',
+      status: c.status,
+      assignedTo: c.meta?.assignedTo,
+    };
+  });
+
+  let displayChores = allChoresToDisplay;
+  if (activeFilter === 'Me' && currentUserId) {
+    displayChores = displayChores.filter(
+      (c) => c.assignedTo === currentUserId && c.status !== 'completed',
+    );
+  } else if (activeFilter === 'Completed') {
+    displayChores = displayChores.filter((c) => c.status === 'completed');
+  } else {
+    displayChores = displayChores.filter((c) => c.status !== 'completed'); // default 'All' excludes completed
+  }
+
+  displayChores = displayChores.map((c) => {
+    const parentChore = fetchedChores.find((hc) => hc.id === c.id);
+    const isMe = currentUserId && c.assignedTo === currentUserId;
+    const name = isMe
+      ? 'You'
+      : c.assignedTo
+        ? parentChore?.assignedName || 'Unknown User'
+        : 'Unassigned';
+
+    let dueDate = dayjs(parentChore?.created_at || new Date()).add(
+      parentChore?.meta?.due_in_days || 7,
+      'day',
+    );
+
+    let text = `${name} - Due ${dueDate.fromNow()}`;
+    if (c.status === 'completed') text = `${name} - Completed ${dayjs().fromNow()}`;
+
+    return { ...c, subtitle: text };
+  });
+
+  const isEmpty = displayChores.length === 0;
 
   return (
     <View style={styles.container}>
@@ -211,26 +283,12 @@ export default function Chores() {
           <View style={styles.content}>
             <Text style={styles.title}>Chores</Text>
 
-            {isEmpty ? (
-              <>
-                <Spacer size="large" />
-
-                <View style={styles.completed}>
-                  <View style={styles.iconWrapper}>
-                    <FontAwesome5 name="check" size={40} color={COLOURS.black} />
-                  </View>
-
-                  <Text style={styles.completedTitle}>All chores complete</Text>
-
-                  <Text style={styles.completedSubtitle}>
-                    Something need doing?{' '}
-                    <InlineButton
-                      title="Create new chore"
-                      onPress={() => router.push('/main/student/create-chore')}
-                    />
-                  </Text>
-                </View>
-              </>
+            {isLoading ? (
+              <View
+                style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}
+              >
+                <ActivityIndicator size="large" color={COLOURS.black} />
+              </View>
             ) : (
               <>
                 <Spacer size="medium" />
@@ -254,28 +312,62 @@ export default function Chores() {
 
                 <Spacer size="medium" />
 
-                {CHORES.map((chore, index) => (
-                  <View key={chore.id}>
-                    <ListItem
-                      title={chore.title}
-                      iconName={chore.iconName}
-                      subtitle={chore.subtitle}
-                      onPress={() => router.push(`/main/student/view-chore`)}
-                      statusChip={
-                        chore.overdue
-                          ? {
-                              label: 'Overdue',
-                              backgroundColor: '#FFE9EA',
-                              textColor: '#B70000',
-                            }
-                          : undefined
-                      }
-                    />
+                {isEmpty ? (
+                  <>
+                    <Spacer size="large" />
 
-                    {/* Spacer between items (not after last) */}
-                    {index < CHORES.length - 1 && <Spacer size="small" />}
-                  </View>
-                ))}
+                    <View style={styles.completed}>
+                      <View style={styles.iconWrapper}>
+                        <FontAwesome5
+                          name={activeFilter === 'Completed' ? 'inbox' : 'check'}
+                          size={40}
+                          color={COLOURS.black}
+                        />
+                      </View>
+
+                      <Text style={styles.completedTitle}>
+                        {activeFilter === 'Completed'
+                          ? 'No completed chores'
+                          : 'All chores complete'}
+                      </Text>
+
+                      {activeFilter !== 'Completed' && (
+                        <Text style={styles.completedSubtitle}>
+                          Something need doing?{' '}
+                          <InlineButton
+                            title="Create new chore"
+                            onPress={() => router.push('/main/student/create-chore')}
+                          />
+                        </Text>
+                      )}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    {displayChores.map((chore, index) => (
+                      <View key={chore.id}>
+                        <ListItem
+                          title={chore.title}
+                          iconName={chore.iconName}
+                          subtitle={chore.subtitle}
+                          onPress={() => router.push(`/main/student/view-chore?id=${chore.id}`)}
+                          statusChip={
+                            chore.overdue
+                              ? {
+                                  label: 'Overdue',
+                                  backgroundColor: '#FFE9EA',
+                                  textColor: '#B70000',
+                                }
+                              : undefined
+                          }
+                        />
+
+                        {/* Spacer between items (not after last) */}
+                        {index < displayChores.length - 1 && <Spacer size="small" />}
+                      </View>
+                    ))}
+                  </>
+                )}
               </>
             )}
 

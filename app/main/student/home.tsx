@@ -1,7 +1,10 @@
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack, router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   BackHandler,
   Keyboard,
@@ -26,6 +29,9 @@ import NavBar, { NavBarItem } from '../../../components/Navbar';
 import ProfilePicture from '../../../components/ProfilePicture';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { getChores } from '../../../lib/chores';
+import { getActiveDormId } from '../../../lib/dorms';
+import { supabase } from '../../../lib/supabase';
 
 const NAV_ITEMS: NavBarItem[] = [
   {
@@ -56,51 +62,9 @@ const NAV_ITEMS: NavBarItem[] = [
 
 const GRADIENT_THRESHOLD = 24;
 
-type IconName = keyof typeof FontAwesome5.glyphMap;
+dayjs.extend(relativeTime);
 
-const TODAY_TASKS: {
-  id: string;
-  title: string;
-  subtitle: string;
-  iconName: IconName;
-  overdue: boolean;
-}[] = [
-  {
-    id: '1',
-    title: 'Take out the bins',
-    subtitle: 'You - Due 1 hour ago',
-    iconName: 'trash' as IconName,
-    overdue: true,
-  },
-  {
-    id: '2',
-    title: 'Tidy the corridor',
-    subtitle: 'You - Due in 1 hour',
-    iconName: 'house-user' as IconName,
-    overdue: false,
-  },
-  {
-    id: '3',
-    title: 'Clean the kitchen area',
-    subtitle: 'Person 2 - Due 6 years ago',
-    iconName: 'utensils' as IconName,
-    overdue: true,
-  },
-  {
-    id: '4',
-    title: 'Mop the floor',
-    subtitle: 'Person 3 - Due in 5 hours',
-    iconName: 'broom' as IconName,
-    overdue: false,
-  },
-  {
-    id: '5',
-    title: 'Hoover the floors',
-    subtitle: 'Person 4 - Due in 8 hours',
-    iconName: 'wind' as IconName,
-    overdue: false,
-  },
-];
+type IconName = keyof typeof FontAwesome5.glyphMap;
 
 const OPEN_REPAIRS: {
   id: string;
@@ -112,23 +76,32 @@ const OPEN_REPAIRS: {
     backgroundColor: string;
     textColor: string;
   };
-}[] = [
-  {
-    id: '1',
-    title: 'Fix broken sink',
-    subtitle: 'Created by Person 2 - 20/02/2026',
-    iconName: 'faucet' as IconName,
-    status: {
-      label: 'In Progress',
-      backgroundColor: '#FFF7D3',
-      textColor: 'rgba(0, 0, 0, 0.65)',
-    },
-  },
-];
+}[] = [];
+
+export type TaskSummary = {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: IconName;
+  overdue: boolean;
+};
+
+type WeekChoreStats = {
+  total: number;
+  completedRate: number;
+  overdue: number;
+};
 
 export default function Home() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [todayTasks, setTodayTasks] = useState<TaskSummary[]>([]);
+  const [weekStats, setWeekStats] = useState<WeekChoreStats>({
+    total: 0,
+    completedRate: 0,
+    overdue: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
   const [contentOverflows, setContentOverflows] = useState(false);
   const scrollViewHeight = useRef(0);
@@ -136,6 +109,79 @@ export default function Home() {
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
   const navGradientOpacity = useRef(new Animated.Value(0)).current;
+
+  const loadTasks = async () => {
+    setIsLoading(true);
+    try {
+      const activeDormId = await getActiveDormId();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const currentUserId = user?.id;
+
+      if (!activeDormId) {
+        router.replace('/main/student/dorms');
+        return;
+      }
+
+      const data = await getChores(activeDormId);
+      const startOfWeek = dayjs().startOf('week');
+      const endOfWeek = dayjs().endOf('week');
+
+      const choresThisWeek = data.filter((c) => {
+        const createdAt = dayjs(c.created_at);
+        return !createdAt.isBefore(startOfWeek) && !createdAt.isAfter(endOfWeek);
+      });
+
+      const completedThisWeek = choresThisWeek.filter((c) => c.status === 'completed').length;
+      const overdueThisWeek = choresThisWeek.filter((c) => {
+        if (c.status === 'completed') return false;
+        const dueDate = dayjs(c.created_at).add(c.meta?.due_in_days || 7, 'day');
+        return dueDate.isBefore(dayjs());
+      }).length;
+
+      setWeekStats({
+        total: choresThisWeek.length,
+        completedRate:
+          choresThisWeek.length > 0
+            ? Math.round((completedThisWeek / choresThisWeek.length) * 100)
+            : 0,
+        overdue: overdueThisWeek,
+      });
+
+      const mappedData = data
+        .filter((c) => c.status !== 'completed')
+        .map((c) => {
+          const isMe = currentUserId && c.meta?.assignedTo === currentUserId;
+          const name = isMe ? 'You' : c.assignedName || 'Unknown User';
+
+          let dueDate = dayjs(c.created_at).add(c.meta?.due_in_days || 7, 'day');
+
+          const text = `${name} - Due ${dueDate.fromNow()}`;
+
+          return {
+            id: c.id,
+            title: c.title,
+            subtitle: text,
+            iconName: 'broom' as IconName,
+            overdue: false,
+          };
+        })
+        .slice(0, 5);
+      setTodayTasks(mappedData);
+    } catch (error) {
+      console.warn('Failed to load tasks', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, []),
+  );
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -180,7 +226,7 @@ export default function Home() {
     ...item,
   }));
 
-  const noChores = TODAY_TASKS.length === 0;
+  const noChores = todayTasks.length === 0;
   const noRepairs = OPEN_REPAIRS.length === 0;
 
   return (
@@ -240,7 +286,19 @@ export default function Home() {
 
             <Spacer size="medium" />
 
-            {noChores ? (
+            {isLoading ? (
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginTop: 50,
+                  marginBottom: 50,
+                }}
+              >
+                <ActivityIndicator size="large" color={COLOURS.black} />
+              </View>
+            ) : noChores ? (
               <View style={styles.emptyCard}>
                 <View style={styles.emptyIconWrapper}>
                   <FontAwesome5 name="check" size={40} color={COLOURS.black} />
@@ -256,13 +314,13 @@ export default function Home() {
               </View>
             ) : (
               <View>
-                {TODAY_TASKS.map((task, index) => (
+                {todayTasks.map((task, index) => (
                   <View key={task.id}>
                     <ListItem
                       title={task.title}
                       subtitle={task.subtitle}
                       iconName={task.iconName}
-                      onPress={() => router.push(`/main/student/view-chore`)}
+                      onPress={() => router.push(`/main/student/view-chore?id=${task.id}`)}
                       statusChip={
                         task.overdue
                           ? {
@@ -273,7 +331,7 @@ export default function Home() {
                           : undefined
                       }
                     />
-                    {index < TODAY_TASKS.length - 1 ? <Spacer size="small" /> : null}
+                    {index < todayTasks.length - 1 ? <Spacer size="small" /> : null}
                   </View>
                 ))}
               </View>
@@ -291,10 +349,10 @@ export default function Home() {
             <Text style={styles.title}>This week</Text>
             <Spacer size="small" />
             <View style={styles.infoPanelGrid}>
-              <InfoPanel label="Total chores" value="12" />
-              <InfoPanel label="Completed" value="85%" />
-              <InfoPanel label="Overdue" value="2" />
-              <InfoPanel label="Open repairs" value="1" />
+              <InfoPanel label="Total chores" value={String(weekStats.total)} />
+              <InfoPanel label="Completed" value={`${weekStats.completedRate}%`} />
+              <InfoPanel label="Overdue" value={String(weekStats.overdue)} />
+              <InfoPanel label="Open repairs" value="--" />
             </View>
 
             <Spacer size="large" />

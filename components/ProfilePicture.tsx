@@ -30,10 +30,18 @@
 
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import React from 'react';
-import { Alert, Image, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from 'react-native';
 
-// Place this asset at: assets/images/avatar-placeholder.png
+import { getCurrentUser, uploadProfilePicture } from '../lib/auth';
 const PLACEHOLDER = require('../assets/images/avatar-placeholder.png');
 
 const SMALL_SIZE = 44;
@@ -50,7 +58,7 @@ interface ProfilePictureProps {
 
 export default function ProfilePicture({
   variant,
-  imageUri,
+  imageUri: externalUri,
   onPress,
   onImageChange,
   style,
@@ -58,10 +66,32 @@ export default function ProfilePicture({
   const isLarge = variant === 'large';
   const size = isLarge ? LARGE_SIZE : SMALL_SIZE;
 
-  // --- Image upload flow (large variant) ---
+  const [internalUri, setInternalUri] = useState<string | null>(externalUri || null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (externalUri !== undefined) {
+      setInternalUri(externalUri);
+    } else {
+      fetchMyAvatar();
+    }
+  }, [externalUri]);
+
+  async function fetchMyAvatar() {
+    try {
+      const user = await getCurrentUser();
+      if (user?.avatarUrl) {
+        setInternalUri(user.avatarUrl);
+      }
+    } catch {
+      // Ignored
+    }
+  }
 
   const handleCameraPress = async () => {
-    // 1. Request permissions
+    if (uploading) return;
+
+    // request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== 'granted') {
@@ -73,14 +103,14 @@ export default function ProfilePicture({
       return;
     }
 
-    // 2. Open picker
+    // open picker
     let result: ImagePicker.ImagePickerResult;
     try {
       result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.5,
       });
     } catch {
       Alert.alert('Error', 'Failed to open the photo library. Please try again.', [{ text: 'OK' }]);
@@ -91,66 +121,34 @@ export default function ProfilePicture({
 
     const asset = result.assets[0];
 
-    // 3. Basic client-side validation
+    // local file size limitation
     if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
       Alert.alert('File Too Large', 'Please choose an image smaller than 5 MB.', [{ text: 'OK' }]);
       return;
     }
 
-    // 4. Simulate upload - replace this block with real upload logic
-    simulateUpload(asset.uri);
+    uploadAvatar(asset.uri);
   };
 
-  const simulateUpload = (uri: string) => {
-    // Surfaces realistic placeholder outcomes until backend is wired up
-    const outcomes = [
-      () =>
-        Alert.alert(
-          'Upload Failed',
-          'Could not connect to the server. Please check your connection and try again.',
-          [
-            { text: 'Retry', onPress: () => simulateUpload(uri) },
-            { text: 'Cancel', style: 'cancel' },
-          ],
-        ),
-      () =>
-        Alert.alert(
-          'Upload Failed',
-          'The server rejected the image. Please try a different file.',
-          [{ text: 'OK' }],
-        ),
-      () =>
-        Alert.alert(
-          'Upload Timed Out',
-          'The upload took too long. Please try again on a faster connection.',
-          [{ text: 'OK' }],
-        ),
-      () => {
-        // Success path - passes URI back to parent for optimistic UI update
-        onImageChange?.(uri);
-        Alert.alert('Profile Picture Updated', 'Your new profile picture has been saved.', [
-          { text: 'Great!' },
-        ]);
-      },
-    ];
+  const uploadAvatar = async (uri: string) => {
+    try {
+      setUploading(true);
+      const user = await getCurrentUser();
+      if (!user) throw new Error('You must be logged in.');
 
-    // Weight success lower while backend is absent
-    const weights = [0.35, 0.25, 0.2, 0.2];
-    const rand = Math.random();
-    let cumulative = 0;
-    for (let i = 0; i < outcomes.length; i++) {
-      cumulative += weights[i];
-      if (rand < cumulative) {
-        outcomes[i]();
-        return;
-      }
+      const publicUrl = await uploadProfilePicture(user.id, uri);
+
+      setInternalUri(publicUrl);
+      onImageChange?.(publicUrl);
+      Alert.alert('Success', 'Profile picture updated!');
+    } catch (err: any) {
+      Alert.alert('Upload Failed', err.message || 'Something went wrong.');
+    } finally {
+      setUploading(false);
     }
-    outcomes[outcomes.length - 1]();
   };
 
-  // --- Render ---
-
-  const imageSource = imageUri ? { uri: imageUri } : PLACEHOLDER;
+  const imageSource = internalUri ? { uri: internalUri } : PLACEHOLDER;
 
   const avatarImage = (
     <Image
@@ -189,8 +187,13 @@ export default function ProfilePicture({
         style={styles.cameraButton}
         accessibilityRole="button"
         accessibilityLabel="Change profile picture"
+        disabled={uploading}
       >
-        <FontAwesome5 name="camera" size={14} color="#000000" />
+        {uploading ? (
+          <ActivityIndicator size="small" color="#000000" />
+        ) : (
+          <FontAwesome5 name="camera" size={14} color="#000000" />
+        )}
       </TouchableOpacity>
     </View>
   );

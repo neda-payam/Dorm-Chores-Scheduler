@@ -22,6 +22,8 @@ import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 import { COLOURS } from '../../../constants/colours';
+import { createDorm, joinDorm, setActiveDormId } from '../../../lib/dorms';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -59,16 +61,37 @@ export default function CreateDorm() {
     headerGradientOpacity.setValue(headerValue);
   };
 
-  const handleCreate = useCallback(() => {
+  const handleCreate = useCallback(async () => {
     setNotice(null);
 
-    if (!name.trim()) {
+    const nameTrimmed = name.trim();
+
+    if (!nameTrimmed) {
       setNotice({ type: 'error', text: 'Please enter a dorm name' });
       return;
     }
+    if (nameTrimmed.length < 3 || nameTrimmed.length > 50) {
+      setNotice({ type: 'error', text: 'Dorm name must be between 3 and 50 characters' });
+      return;
+    }
 
-    // TODO: submit dorm to API
-    router.push('/main/student/dorms');
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) throw new Error('User not authenticated.');
+
+      const dorm = await createDorm({ name: nameTrimmed }, userData.user.id);
+
+      // Note: we can skip joinDorm here if we decide to just automatically join them on backend, but let's keep it.
+      await joinDorm(userData.user.id, dorm.join_code);
+      await setActiveDormId(dorm.id);
+
+      router.push('/main/student/dorms');
+    } catch (err: any) {
+      setNotice({
+        type: 'error',
+        text: err.message || 'Failed to create dorm. Please try again.',
+      });
+    }
   }, [name]);
 
   return (

@@ -61,6 +61,7 @@ export default function InlineButton({
           textDecorationLine: 'underline',
           // Apply disabled color when button is disabled
           color: disabled ? COLOURS.disabled : COLOURS.primary,
+          flexShrink: 0,
         },
         style,
       ]}

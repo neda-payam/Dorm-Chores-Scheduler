@@ -1,9 +1,9 @@
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  BackHandler,
   Keyboard,
   KeyboardAvoidingView,
   NativeScrollEvent,
@@ -60,11 +60,6 @@ export default function Profile() {
   }, []);
 
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => backHandler.remove();
-  }, []);
-
-  useEffect(() => {
     const showListener = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
     const hideListener = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
 
@@ -84,7 +79,9 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+      <Stack.Screen
+        options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
+      />
 
       <View style={styles.topBar}>
         <HeaderBackButton iconName="times" />
@@ -178,7 +175,13 @@ export default function Profile() {
 
             <Text style={styles.versionHeading}>Your app version</Text>
             <Spacer size="small" />
-            <Text style={styles.body}>v1.0.0 (build number)</Text>
+            <Text style={styles.body}>
+              v{Constants.expoConfig?.version || '1.0.0'} (
+              {Platform.OS === 'ios'
+                ? Constants.expoConfig?.ios?.buildNumber || '1'
+                : Constants.expoConfig?.android?.versionCode || '1'}
+              )
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

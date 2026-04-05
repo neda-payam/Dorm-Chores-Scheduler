@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system';
 import { UnauthorisedError, ValidationError, formatErrorMessage } from './errors';
 import { supabase } from './supabase';
 import {
@@ -116,11 +117,18 @@ export async function getCurrentUser() {
     return null;
   }
 
-  const role = await getUserRole(user.id);
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_manager, avatar_url')
+    .eq('id', user.id)
+    .single();
+
+  const role = profile?.is_manager ? 'manager' : 'student';
 
   return {
     ...user,
     role,
+    avatarUrl: profile?.avatar_url || null,
   };
 }
 
@@ -148,4 +156,82 @@ export async function isAuthenticated(): Promise<boolean> {
     data: { user },
   } = await supabase.auth.getUser();
   return !!user;
+}
+
+export async function uploadProfilePicture(userId: string, localUri: string): Promise<string> {
+  if (!userId) throw new Error('User ID is required to upload profile picture.');
+  if (!localUri) throw new Error('A valid local file URI is required.');
+
+  try {
+    const rawExt = localUri.split('.').pop()?.toLowerCase() || 'jpeg';
+    const allowedExtensions = ['jpeg', 'jpg', 'png', 'webp'];
+    if (!allowedExtensions.includes(rawExt)) {
+      throw new Error(`Invalid file type. Allowed: ${allowedExtensions.join(', ')}.`);
+    }
+
+    const fileExt = rawExt === 'jpg' ? 'jpeg' : rawExt;
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    const contentType = `image/${fileExt}`;
+
+    // get current avatar
+    const { data: profile, error: profileFetchError } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (profileFetchError && profileFetchError.code !== 'PGRST116') {
+      console.error('Issue verifying previous profile image:', profileFetchError.message);
+    }
+
+    // fetch buffer natively
+    const fileInstance = new FileSystem.File(localUri);
+    const arrayBuffer = await fileInstance.arrayBuffer();
+
+    // 1mb limit
+    const MAX_SIZE_BYTES = 1048576;
+    if (arrayBuffer.byteLength > MAX_SIZE_BYTES) {
+      throw new Error(
+        `File is too large (${(arrayBuffer.byteLength / 1048576).toFixed(2)} MB). Max size permitted is 1.0 MB.`,
+      );
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from('User Avatars')
+      .upload(fileName, arrayBuffer, {
+        upsert: true,
+        contentType,
+      });
+
+    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+
+    const { data } = supabase.storage.from('User Avatars').getPublicUrl(fileName);
+    const publicUrl = data.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', userId);
+
+    if (updateError) throw new Error(`Failed to update profile: ${updateError.message}`);
+
+    // replace old avatar
+    if (profile?.avatar_url) {
+      const match = profile.avatar_url.match(/\/User%20Avatars\/(.+)$/);
+      if (match && match[1]) {
+        const oldFilePath = decodeURIComponent(match[1]);
+        const { error: removeError } = await supabase.storage
+          .from('User Avatars')
+          .remove([oldFilePath]);
+
+        if (removeError) {
+          console.warn('Failed to delete old profile picture:', removeError.message);
+        }
+      }
+    }
+
+    return publicUrl;
+  } catch (error: any) {
+    throw new Error(error.message || 'An error occurred while uploading.');
+  }
 }
