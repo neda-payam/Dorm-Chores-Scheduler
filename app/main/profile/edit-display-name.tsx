@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -16,15 +16,19 @@ import {
 
 import Button from '../../../components/Button';
 import HeaderBackButton from '../../../components/HeaderBackButton';
+import InlineNotification from '../../../components/InlineNotification';
 import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
 export default function EditDisplayName() {
   const [displayName, setDisplayName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
 
@@ -32,6 +36,69 @@ export default function EditDisplayName() {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => backHandler.remove();
   }, []);
+
+  useEffect(() => {
+    const loadDisplayName = async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.log('Error fetching auth user:', userError);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.log('Error fetching profile:', profileError);
+        return;
+      }
+
+      setDisplayName(profile.display_name ?? '');
+    };
+
+    loadDisplayName();
+  }, []);
+
+  const handleSaveDisplayName = async () => {
+    setNotice(null);
+    setLoading(true);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setLoading(false);
+      setNotice({ type: 'error', text: 'Could not find the current user.' });
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName })
+      .eq('id', user.id);
+
+    setLoading(false);
+
+    if (updateError) {
+      setNotice({ type: 'error', text: updateError.message });
+      return;
+    }
+
+    setNotice({ type: 'success', text: 'Display name updated successfully.' });
+
+    setTimeout(() => {
+      router.back();
+    }, 1200);
+  };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = e.nativeEvent.contentOffset.y;
@@ -41,7 +108,7 @@ export default function EditDisplayName() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
 
       <View style={styles.topBar}>
         <HeaderBackButton iconName="chevron-left" />
@@ -59,10 +126,13 @@ export default function EditDisplayName() {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.keyboardView}
       >
         <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
@@ -80,11 +150,24 @@ export default function EditDisplayName() {
             <Text style={styles.label}>New display name</Text>
 
             <Input value={displayName} onChangeText={setDisplayName} placeholder="Example Name" />
+
+            {notice && (
+              <>
+                <Spacer size="medium" />
+                <InlineNotification type={notice.type} text={notice.text} />
+              </>
+            )}
+
+            <Spacer size="large" />
           </View>
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button title="Save changes" onPress={() => {}} />
+          <Button
+            title={loading ? 'Saving...' : 'Save changes'}
+            onPress={handleSaveDisplayName}
+            disabled={loading}
+          />
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -92,16 +175,32 @@ export default function EditDisplayName() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLOURS.white },
+  container: {
+    flex: 1,
+    backgroundColor: COLOURS.white,
+  },
   topBar: {
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
     backgroundColor: COLOURS.white,
   },
-  headerGradientWrapper: { height: 6 },
-  scrollContent: { flexGrow: 1, paddingBottom: 100 },
-  content: { marginHorizontal: 20 },
+  headerGradientWrapper: {
+    height: 6,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  content: {
+    marginHorizontal: 20,
+  },
   heading: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
@@ -111,11 +210,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 16,
     color: COLOURS.gray[700],
+    lineHeight: 24,
   },
   label: {
     fontFamily: 'Inter-Bold',
     fontSize: 14,
     marginBottom: 8,
+    color: COLOURS.black,
   },
   footer: {
     padding: 20,

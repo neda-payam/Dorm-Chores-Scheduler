@@ -21,10 +21,14 @@ import ProfilePicture from '../../../components/ProfilePicture';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
 export default function Profile() {
+  const [displayName, setDisplayName] = useState('');
+  const [accountType, setAccountType] = useState('');
+
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
@@ -42,6 +46,36 @@ export default function Profile() {
       showListener.remove();
       hideListener.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.log('Error fetching auth user:', userError);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('display_name, is_manager')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.log('Error fetching profile:', profileError);
+        return;
+      }
+
+      setDisplayName(profile.display_name ?? 'User');
+      setAccountType(profile.is_manager ? 'Manager Account' : 'Student Account');
+    };
+
+    loadProfile();
   }, []);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -91,8 +125,8 @@ export default function Profile() {
             <View style={styles.profileSection}>
               <ProfilePicture variant="large" />
               <Spacer size="medium" />
-              <Text style={styles.heading}>EXAMPLE NAME</Text>
-              <Text style={styles.accountType}>Student Account</Text>
+              <Text style={styles.heading}>{displayName || 'Loading...'}</Text>
+              <Text style={styles.accountType}>{accountType || 'Loading...'}</Text>
             </View>
 
             <Spacer size="large" />

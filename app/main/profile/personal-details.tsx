@@ -20,11 +20,14 @@ import HeaderBackButton from '../../../components/HeaderBackButton';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
 export default function PersonalDetails() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
 
   const headerGradientOpacity = useRef(new Animated.Value(0)).current;
 
@@ -42,6 +45,37 @@ export default function PersonalDetails() {
     };
   }, []);
 
+  useEffect(() => {
+    const loadPersonalDetails = async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.log('Error fetching auth user:', userError);
+        return;
+      }
+
+      setEmail(user.email ?? '');
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.log('Error fetching profile:', profileError);
+        return;
+      }
+
+      setDisplayName(profile.display_name ?? '');
+    };
+
+    loadPersonalDetails();
+  }, []);
+
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset } = e.nativeEvent;
     const scrollY = contentOffset.y;
@@ -54,12 +88,10 @@ export default function PersonalDetails() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
 
-      {/* Static header */}
       <View style={styles.topBar}>
         <HeaderBackButton iconName="chevron-left" />
       </View>
 
-      {/* Header bottom shadow - fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -72,7 +104,6 @@ export default function PersonalDetails() {
         />
       </Animated.View>
 
-      {/* Scrollable content */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -93,7 +124,7 @@ export default function PersonalDetails() {
 
             <ListItem
               title="Display name"
-              subtitle="Your Name"
+              subtitle={displayName || 'Loading...'}
               iconName="signature"
               onPress={() => router.push('/main/profile/edit-display-name')}
             />
@@ -102,7 +133,7 @@ export default function PersonalDetails() {
 
             <ListItem
               title="Email address"
-              subtitle="your@email.com"
+              subtitle={email || 'Loading...'}
               iconName="envelope"
               onPress={() => router.push('/main/profile/edit-email')}
             />
