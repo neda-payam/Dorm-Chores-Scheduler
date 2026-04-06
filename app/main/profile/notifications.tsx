@@ -14,6 +14,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { getNotificationSettings, updateNotificationSettings } from '../../../lib/notifications';
 
 import HeaderBackButton from '../../../components/HeaderBackButton';
 import Spacer from '../../../components/Spacer';
@@ -90,21 +91,11 @@ export default function Notifications() {
 
       setIsManager(profile?.is_manager ?? false);
 
-      const { data: prefs, error: prefsError } = await supabase
-        .from('notification_preferences')
-        .select('preferences')
-        .eq('user_id', user.id)
-        .single();
-
-      if (prefsError) {
-        if (prefsError.code !== 'PGRST116') {
-          console.log('Error fetching notification preferences:', prefsError);
-        }
-        return;
-      }
-
-      if (prefs?.preferences) {
-        setToggleStates(prefs.preferences);
+      try {
+        const preferences = await getNotificationSettings(user.id);
+        setToggleStates(preferences);
+      } catch (err) {
+        console.log('Error loading notification preferences:', err);
       }
     };
 
@@ -137,13 +128,10 @@ export default function Notifications() {
 
     if (!userId) return;
 
-    const { error } = await supabase.from('notification_preferences').upsert({
-      user_id: userId,
-      preferences: updated,
-    });
-
-    if (error) {
-      console.log('Error saving notification preferences:', error);
+    try {
+      await updateNotificationSettings(userId, updated);
+    } catch (err) {
+      console.log('Error saving notification preferences:', err);
     }
   };
 
