@@ -45,6 +45,7 @@ export async function signUpUser(
     options: {
       data: {
         display_name: displayName,
+        is_manager: role === 'manager',
       },
     },
   });
@@ -54,20 +55,6 @@ export async function signUpUser(
       throw new ValidationError('User already registered');
     }
     throw new Error(formatErrorMessage(error.message));
-  }
-
-  const userId = data.user?.id;
-  if (userId) {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        is_manager: role === 'manager',
-      })
-      .eq('id', userId);
-
-    if (profileError) {
-      console.warn('Failed to update profile role:', formatErrorMessage(profileError.message));
-    }
   }
 
   return data;

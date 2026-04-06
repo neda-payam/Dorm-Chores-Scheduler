@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
@@ -19,6 +19,7 @@ import InlineNotification from '../../../components/InlineNotification';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
+import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -38,25 +39,35 @@ export default function DeleteAccount() {
     setLoading(true);
     setNotice(null);
 
-    // Run delete request here.
+    try {
+      await supabase.auth.signOut();
 
-    // if (error) {
-    //   setLoading(false);
-    //   setNotice({ type: 'error', text: error.message });
-    //   return;
-    // }
+      setNotice({
+        type: 'success',
+        text: 'You have been signed out. Full account deletion requires secure backend/admin access.',
+      });
 
-    setLoading(false);
+      setTimeout(() => {
+        router.replace('/auth/signin');
+      }, 1500);
+    } catch (error: any) {
+      setNotice({
+        type: 'error',
+        text: error?.message || 'Something went wrong while processing your request.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const handleDelete = useCallback(() => {
     Alert.alert(
       'Delete account',
-      'This will permanently remove your account. This action cannot be undone.',
+      'This will sign you out now. Full account deletion requires secure backend/admin access and cannot be completed directly from the app.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Continue',
           style: 'destructive',
           onPress: confirmDelete,
         },
@@ -70,12 +81,10 @@ export default function DeleteAccount() {
         options={{ headerShown: false, gestureEnabled: true, animation: 'slide_from_right' }}
       />
 
-      {/* Static header */}
       <View style={styles.topBar}>
         <HeaderBackButton iconName="chevron-left" />
       </View>
 
-      {/* Header bottom shadow — fades in once user scrolls */}
       <Animated.View
         style={[styles.headerGradientWrapper, { opacity: headerGradientOpacity }]}
         pointerEvents="none"
@@ -88,7 +97,6 @@ export default function DeleteAccount() {
         />
       </Animated.View>
 
-      {/* Scrollable content */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -103,8 +111,8 @@ export default function DeleteAccount() {
 
           <Text style={styles.body}>
             Deleting your account will permanently remove your profile, settings, and all associated
-            data. Once deleted, you will no longer be able to sign in, and this action cannot be
-            undone.
+            data. In this version of the app, full deletion is handled securely through
+            backend/admin access rather than directly from the mobile client.
           </Text>
 
           {notice && (
@@ -118,10 +126,9 @@ export default function DeleteAccount() {
         </View>
       </ScrollView>
 
-      {/* Pinned delete button at the bottom */}
       <View style={styles.footer}>
         <Button
-          title={loading ? 'Deleting...' : 'Delete account'}
+          title={loading ? 'Processing...' : 'Delete account'}
           onPress={handleDelete}
           variant="danger"
           disabled={loading}
