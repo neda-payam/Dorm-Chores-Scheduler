@@ -14,6 +14,8 @@ import {
   Text,
   View,
 } from 'react-native';
+
+import { getCurrentUser } from '../../../lib/auth';
 import { getNotificationSettings, updateNotificationSettings } from '../../../lib/notifications';
 
 import HeaderBackButton from '../../../components/HeaderBackButton';
@@ -22,9 +24,9 @@ import ToggleItem from '../../../components/ToggleItem';
 
 import { COLOURS } from '../../../constants/colours';
 import type { PreferenceKey } from '../../../lib/inAppNotifications';
-import { supabase } from '../../../lib/supabase';
 
 const GRADIENT_THRESHOLD = 24;
+const ALL_NOTIFICATIONS_KEY = 'all_notifications';
 
 type NotificationItem = {
   id: PreferenceKey;
@@ -67,35 +69,28 @@ export default function Notifications() {
   ];
 
   const notificationsToShow = isManager ? MANAGER_NOTIFICATIONS : STUDENT_NOTIFICATIONS;
+  const allEnabled = toggleStates[ALL_NOTIFICATIONS_KEY] ?? true;
 
   useEffect(() => {
     const loadData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) return;
-
-      setUserId(user.id);
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_manager')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.log('Error fetching profile role:', profileError);
-        return;
-      }
-
-      setIsManager(profile?.is_manager ?? false);
-
       try {
+        const user = await getCurrentUser();
+
+        if (!user) {
+          return;
+        }
+
+        setUserId(user.id);
+        setIsManager(user.role === 'manager');
+
         const preferences = await getNotificationSettings(user.id);
-        setToggleStates(preferences);
-      } catch (err) {
-        console.log('Error loading notification preferences:', err);
+
+        setToggleStates({
+          [ALL_NOTIFICATIONS_KEY]: preferences[ALL_NOTIFICATIONS_KEY] ?? true,
+          ...preferences,
+        });
+      } catch (error) {
+        console.log('Error loading notification settings:', error);
       }
     };
 
@@ -116,6 +111,23 @@ export default function Notifications() {
     const scrollY = e.nativeEvent.contentOffset.y;
     const headerValue = Math.min(scrollY / GRADIENT_THRESHOLD, 1);
     headerGradientOpacity.setValue(headerValue);
+  };
+
+  const toggleAllNotifications = async () => {
+    const updated = {
+      ...toggleStates,
+      [ALL_NOTIFICATIONS_KEY]: !allEnabled,
+    };
+
+    setToggleStates(updated);
+
+    if (!userId) return;
+
+    try {
+      await updateNotificationSettings(userId, updated);
+    } catch (err) {
+      console.log('Error saving global notification preference:', err);
+    }
   };
 
   const toggleNotification = async (key: PreferenceKey) => {
@@ -175,6 +187,15 @@ export default function Notifications() {
 
             <Spacer size="large" />
 
+            <ToggleItem
+              title="Allow all notifications"
+              iconName="bell"
+              value={allEnabled}
+              onValueChange={toggleAllNotifications}
+            />
+
+            <Spacer size="medium" />
+
             {notificationsToShow.map((item, index) => (
               <View key={item.id}>
                 <ToggleItem
@@ -182,6 +203,7 @@ export default function Notifications() {
                   iconName={item.iconName}
                   value={toggleStates[item.id] ?? true}
                   onValueChange={() => toggleNotification(item.id)}
+                  disabled={!allEnabled}
                 />
                 {index < notificationsToShow.length - 1 ? <Spacer size="small" /> : null}
               </View>

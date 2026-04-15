@@ -19,7 +19,7 @@ import InlineNotification from '../../../components/InlineNotification';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
-import { supabase } from '../../../lib/supabase';
+import { getCurrentUser, signOutUser, softDeleteCurrentUser } from '../../../lib/auth';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -40,16 +40,24 @@ export default function DeleteAccount() {
     setNotice(null);
 
     try {
-      await supabase.auth.signOut();
+      const user = await getCurrentUser();
+
+      if (!user) {
+        setNotice({ type: 'error', text: 'Could not find the current user.' });
+        return;
+      }
+
+      await softDeleteCurrentUser(user.id);
+      await signOutUser();
 
       setNotice({
         type: 'success',
-        text: 'You have been signed out. Full account deletion requires secure backend/admin access.',
+        text: 'Your account has been deactivated successfully.',
       });
 
       setTimeout(() => {
         router.replace('/auth/signin');
-      }, 1500);
+      }, 1200);
     } catch (error: any) {
       setNotice({
         type: 'error',
@@ -61,18 +69,14 @@ export default function DeleteAccount() {
   }, []);
 
   const handleDelete = useCallback(() => {
-    Alert.alert(
-      'Delete account',
-      'This will sign you out now. Full account deletion requires secure backend/admin access and cannot be completed directly from the app.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: confirmDelete,
-        },
-      ],
-    );
+    Alert.alert('Delete account', 'This will deactivate your account and sign you out.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: confirmDelete,
+      },
+    ]);
   }, [confirmDelete]);
 
   return (
@@ -110,9 +114,7 @@ export default function DeleteAccount() {
           <Spacer size="small" />
 
           <Text style={styles.body}>
-            Deleting your account will permanently remove your profile, settings, and all associated
-            data. In this version of the app, full deletion is handled securely through
-            backend/admin access rather than directly from the mobile client.
+            Deleting your account will deactivate your profile and sign you out of the app.
           </Text>
 
           {notice && (

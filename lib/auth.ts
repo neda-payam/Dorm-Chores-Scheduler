@@ -80,6 +80,46 @@ export async function signOutUser() {
   }
 }
 
+export async function softDeleteCurrentUser(userId: string) {
+  if (!userId) {
+    throw new Error('User ID is required.');
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+      display_name: 'Deleted User',
+      avatar_url: null,
+    })
+    .eq('id', userId);
+
+  if (error) {
+    throw new Error(formatErrorMessage(error.message));
+  }
+}
+export async function isSoftDeletedUser(userId: string): Promise<boolean> {
+  if (!userId) {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_deleted')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return false;
+    }
+    throw new Error(formatErrorMessage(error.message));
+  }
+
+  return data?.is_deleted === true;
+}
+
 export async function resetPassword(email: string) {
   const normEmail = normaliseEmail(email);
   validateResetPasswordFields(normEmail);
@@ -94,7 +134,6 @@ export async function resetPassword(email: string) {
 }
 
 export async function getCurrentUser() {
-  // Use getUser() to securely hit the API and ensure the session is currently valid
   const {
     data: { user },
     error: userError,
@@ -104,17 +143,22 @@ export async function getCurrentUser() {
     return null;
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('is_manager, avatar_url')
+    .select('display_name, is_manager, avatar_url')
     .eq('id', user.id)
     .single();
+
+  if (profileError && profileError.code !== 'PGRST116') {
+    throw new Error(formatErrorMessage(profileError.message));
+  }
 
   const role = profile?.is_manager ? 'manager' : 'student';
 
   return {
     ...user,
     role,
+    displayName: profile?.display_name || null,
     avatarUrl: profile?.avatar_url || null,
   };
 }

@@ -32,7 +32,12 @@ export async function createInAppNotification(
 
   const preferences = prefsRow?.preferences ?? {};
 
-  // If preference exists and is false, do not create notification
+  // Global notification toggle
+  if (preferences['all_notifications'] === false) {
+    return;
+  }
+
+  // Specific notification toggle
   if (preferences[preferenceKey] === false) {
     return;
   }

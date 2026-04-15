@@ -154,10 +154,15 @@ export default function ConfirmNewEmail() {
 
             <Spacer size="medium" />
 
+            {/* Updated formatting */}
             <InlineNotification
               type="info"
-              text={`We’ve sent a verification code to ${email ?? 'your new email address'}.`}
+              text="We’ve sent a verification code to the following email address:"
             />
+
+            <Spacer size="small" />
+
+            <Text style={styles.emailSubtitle}>{email ?? 'your new email address'}</Text>
 
             <Spacer size="medium" />
 
@@ -257,6 +262,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLOURS.black,
   },
+
+  emailSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: COLOURS.black,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+
   footer: {
     paddingHorizontal: 20,
     paddingBottom: Platform.OS === 'ios' ? 36 : 20,

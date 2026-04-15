@@ -21,7 +21,7 @@ import ProfilePicture from '../../../components/ProfilePicture';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
-import { supabase } from '../../../lib/supabase';
+import { getCurrentUser, signOutUser } from '../../../lib/auth';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -44,29 +44,18 @@ export default function Profile() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      try {
+        const user = await getCurrentUser();
 
-      if (userError || !user) {
-        console.log('Error fetching auth user:', userError);
-        return;
+        if (!user) {
+          return;
+        }
+
+        setDisplayName(user.displayName ?? 'User');
+        setAccountType(user.role === 'manager' ? 'Manager Account' : 'Student Account');
+      } catch (error) {
+        console.error('Failed to load profile:', error);
       }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('display_name, is_manager')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.log('Error fetching profile:', profileError);
-        return;
-      }
-
-      setDisplayName(profile.display_name ?? 'User');
-      setAccountType(profile.is_manager ? 'Manager Account' : 'Student Account');
     };
 
     loadProfile();
@@ -166,7 +155,7 @@ export default function Profile() {
               iconName="sign-out-alt"
               onPress={async () => {
                 try {
-                  await supabase.auth.signOut();
+                  await signOutUser();
                   router.replace('/auth/signin');
                 } catch (error) {
                   console.error('Failed to log out:', error);

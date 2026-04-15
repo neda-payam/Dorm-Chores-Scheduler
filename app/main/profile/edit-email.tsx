@@ -90,11 +90,11 @@ export default function EditEmail() {
 
     setNotice({
       type: 'success',
-      text: 'Email update requested. Please check your new email for confirmation.',
+      text: 'Check both your current and new email to confirm the change.',
     });
 
     setTimeout(() => {
-      router.push({
+      router.replace({
         pathname: '/main/profile/confirm-new-email',
         params: { email },
       });
@@ -150,12 +150,13 @@ export default function EditEmail() {
 
             <InlineNotification
               type="warning"
-              text="Changing your email address will update the email used to sign in and receive account notifications."
+              text="For security, Supabase may require confirmation using both your current and new email address."
             />
 
             <Spacer size="medium" />
 
             <Text style={styles.inputLabel}>New email address</Text>
+
             <Input
               value={email}
               onChangeText={(t) => {

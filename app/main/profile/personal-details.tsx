@@ -19,7 +19,7 @@ import HeaderBackButton from '../../../components/HeaderBackButton';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
-import { supabase } from '../../../lib/supabase';
+import { getCurrentUser } from '../../../lib/auth';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -41,30 +41,18 @@ export default function PersonalDetails() {
 
   useEffect(() => {
     const loadPersonalDetails = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      try {
+        const user = await getCurrentUser();
 
-      if (userError || !user) {
-        console.log('Error fetching auth user:', userError);
-        return;
+        if (!user) {
+          return;
+        }
+
+        setEmail(user.email ?? '');
+        setDisplayName(user.displayName ?? '');
+      } catch (error) {
+        console.error('Failed to load personal details:', error);
       }
-
-      setEmail(user.email ?? '');
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.log('Error fetching profile:', profileError);
-        return;
-      }
-
-      setDisplayName(profile.display_name ?? '');
     };
 
     loadPersonalDetails();

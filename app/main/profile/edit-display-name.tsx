@@ -20,7 +20,7 @@ import Input from '../../../components/Input';
 import Spacer from '../../../components/Spacer';
 
 import { COLOURS } from '../../../constants/colours';
-import { supabase } from '../../../lib/supabase';
+import { getCurrentUser, updateDisplayName } from '../../../lib/auth';
 
 const GRADIENT_THRESHOLD = 24;
 
@@ -33,28 +33,17 @@ export default function EditDisplayName() {
 
   useEffect(() => {
     const loadDisplayName = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      try {
+        const user = await getCurrentUser();
 
-      if (userError || !user) {
-        console.log('Error fetching auth user:', userError);
-        return;
+        if (!user) {
+          return;
+        }
+
+        setDisplayName(user.displayName ?? '');
+      } catch (error) {
+        console.error('Failed to load display name:', error);
       }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.log('Error fetching profile:', profileError);
-        return;
-      }
-
-      setDisplayName(profile.display_name ?? '');
     };
 
     loadDisplayName();
@@ -64,34 +53,29 @@ export default function EditDisplayName() {
     setNotice(null);
     setLoading(true);
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const user = await getCurrentUser();
 
-    if (userError || !user) {
+      if (!user) {
+        setNotice({ type: 'error', text: 'Could not find the current user.' });
+        return;
+      }
+
+      await updateDisplayName(user.id, displayName);
+
+      setNotice({ type: 'success', text: 'Display name updated successfully.' });
+
+      setTimeout(() => {
+        router.back();
+      }, 1200);
+    } catch (error: any) {
+      setNotice({
+        type: 'error',
+        text: error?.message || 'Something went wrong while updating your display name.',
+      });
+    } finally {
       setLoading(false);
-      setNotice({ type: 'error', text: 'Could not find the current user.' });
-      return;
     }
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ display_name: displayName })
-      .eq('id', user.id);
-
-    setLoading(false);
-
-    if (updateError) {
-      setNotice({ type: 'error', text: updateError.message });
-      return;
-    }
-
-    setNotice({ type: 'success', text: 'Display name updated successfully.' });
-
-    setTimeout(() => {
-      router.back();
-    }, 1200);
   };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
